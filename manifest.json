@@ -1,0 +1,21 @@
+{
+  "name": "Калькулятор дневного лимита",
+  "short_name": "Лимит",
+  "description": "Сколько могу тратить в день",
+  "start_url": "/cashflow-calc/",
+  "display": "standalone",
+  "background_color": "#f5f5f3",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
