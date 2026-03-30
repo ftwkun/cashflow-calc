@@ -54,16 +54,14 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
 .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
-.freq { display: flex; gap: 4px; flex-shrink: 0; }
+.freq { display: flex; gap: 4px; flex-shrink: 0; justify-content: flex-end; }
 .freq label { font-size: 11px; color: #888; cursor: pointer; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 2px 6px; white-space: nowrap; user-select: none; }
 .freq input[type=radio] { display: none; }
 .freq input[type=radio]:checked + label { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-.entry-row { flex-wrap: wrap; }
-.entry-row .freq { width: 100%; padding-left: 0; }
-@media (min-width: 480px) {
-  .entry-row { flex-wrap: nowrap; }
-  .entry-row .freq { width: auto; }
-}
+.entry-row { flex-wrap: wrap; margin-bottom: 0; padding: 8px 4px; border-radius: 8px; }
+.entry-row:nth-child(odd) { background: #fafaf8; }
+.entry-row:nth-child(even) { background: #f0f0ed; }
+.entry-row .freq { width: 100%; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -308,14 +306,14 @@ function addRowWithData(containerId, type, date, sum, label, freq) {
   div.innerHTML =
     '<input type="date" class="' + type + '-date" value="' + (date || today()) + '" style="max-width:130px;">' +
     '<input type="number" class="' + type + '-sum" placeholder="' + t.placeholderSum + ' ' + c.sym + '" style="max-width:100px;" value="' + (sum || '') + '" step="0.01">' +
+    '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>' +
     '<input type="text" class="' + type + '-label" placeholder="' + t.placeholderName + '" value="' + (label || '') + '" style="min-width:0;">' +
     '<div class="freq">' +
       '<input type="radio" name="freq-' + uid + '" id="fo-' + uid + '" class="' + type + '-freq" value="once"' + (f === 'once' ? ' checked' : '') + '><label for="fo-' + uid + '">' + t.freqOnce + '</label>' +
       '<input type="radio" name="freq-' + uid + '" id="fd-' + uid + '" class="' + type + '-freq" value="daily"' + (f === 'daily' ? ' checked' : '') + '><label for="fd-' + uid + '">' + t.freqDaily + '</label>' +
       '<input type="radio" name="freq-' + uid + '" id="fm-' + uid + '" class="' + type + '-freq" value="monthly"' + (f === 'monthly' ? ' checked' : '') + '><label for="fm-' + uid + '">' + t.freqMonthly + '</label>' +
       '<input type="radio" name="freq-' + uid + '" id="fw-' + uid + '" class="' + type + '-freq" value="weekly"' + (f === 'weekly' ? ' checked' : '') + '><label for="fw-' + uid + '">' + t.freqWeekly + '</label>' +
-    '</div>' +
-    '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>';
+    '</div>';
   el.appendChild(div);
 }
 
