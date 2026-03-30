@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Калькулятор дневного лимита</title>
+<title>Daily Limit Calculator</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a1a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,7 +13,12 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; padding: 1.5rem 1rem; }
 .container { max-width: 560px; margin: 0 auto; }
-h1 { font-size: 18px; font-weight: 500; margin-bottom: 1.5rem; color: #1a1a1a; }
+.top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+h1 { font-size: 18px; font-weight: 500; color: #1a1a1a; }
+.controls { display: flex; gap: 6px; }
+.toggle-btn { background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: #666; }
+.toggle-btn:hover { background: #ebebea; }
+.toggle-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
 .section { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .section-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -44,7 +49,7 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 .metric-value { font-size: 17px; font-weight: 500; color: #1a1a1a; }
 .metric-value.danger { color: #A32D2D; }
 .metric-value.success { color: #3B6D11; }
-.chart-wrap { position: relative; width: 100%; height: 280px; background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem; margin-bottom: 8px; display: none; }
+.chart-wrap { width: 100%; background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem; margin-bottom: 8px; display: none; }
 .chart-note { font-size: 12px; color: #aaa; text-align: center; margin-bottom: 1rem; display: none; }
 .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
@@ -53,70 +58,78 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 </head>
 <body>
 <div class="container">
-  <h1>Калькулятор дневного лимита</h1>
+  <div class="top-bar">
+    <h1 id="t-title">Калькулятор дневного лимита</h1>
+    <div class="controls">
+      <button class="toggle-btn active" id="btn-ru" onclick="setLang('ru')">RU</button>
+      <button class="toggle-btn" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="toggle-btn active" id="btn-rub" onclick="setCurrency('rub')">₽</button>
+      <button class="toggle-btn" id="btn-usd" onclick="setCurrency('usd')">$</button>
+    </div>
+  </div>
 
   <div class="section">
-    <div class="section-title" style="margin-bottom:12px;">Стартовые данные</div>
+    <div class="section-title" style="margin-bottom:12px;" id="t-section-main">Стартовые данные</div>
     <div class="field-row">
-      <label>Баланс сейчас, ₽</label>
-      <input type="number" id="balance" value="50000">
+      <label id="t-balance">Баланс сейчас, ₽</label>
+      <input type="number" id="balance" value="50000" step="0.01">
     </div>
     <div class="field-row">
-      <label>До какой даты</label>
+      <label id="t-horizon">До какой даты</label>
       <input type="date" id="horizon">
     </div>
     <div class="field-row">
-      <label>Мин. остаток, ₽</label>
-      <input type="number" id="minbal" value="5000">
+      <label id="t-minbal">Мин. остаток, ₽</label>
+      <input type="number" id="minbal" value="5000" step="0.01">
     </div>
     <div class="limit-row">
-      <label style="font-size:13px; color:#666; white-space:nowrap;">Дневной лимит, ₽</label>
-      <input type="number" id="custom-limit" placeholder="авто" style="max-width:130px;">
+      <label id="t-limit-label" style="font-size:13px; color:#666; white-space:nowrap;">Дневной лимит, ₽</label>
+      <input type="number" id="custom-limit" placeholder="авто" style="max-width:130px;" step="0.01">
       <span class="rec-badge" id="rec-badge">рекомендован: —</span>
     </div>
-    <div class="hint">оставьте пустым — лимит посчитается автоматически</div>
+    <div class="hint" id="t-hint">оставьте пустым — лимит посчитается автоматически</div>
   </div>
 
   <div class="section">
     <div class="section-header">
-      <div class="section-title">Поступления</div>
-      <button class="sort-btn" onclick="sortContainer('incomes','income')">по дате ↑</button>
+      <div class="section-title" id="t-incomes">Поступления</div>
+      <button class="sort-btn" onclick="sortContainer('incomes','income')" id="t-sort-btn-inc">по дате ↑</button>
     </div>
     <div id="incomes"></div>
-    <button class="add-btn" onclick="addRow('incomes','income')">+ добавить</button>
+    <button class="add-btn" onclick="addRow('incomes','income')" id="t-add-inc">+ добавить</button>
   </div>
 
   <div class="section">
     <div class="section-header">
-      <div class="section-title">Крупные траты</div>
-      <button class="sort-btn" onclick="sortContainer('expenses','expense')">по дате ↑</button>
+      <div class="section-title" id="t-expenses">Крупные траты</div>
+      <button class="sort-btn" onclick="sortContainer('expenses','expense')" id="t-sort-btn-exp">по дате ↑</button>
     </div>
     <div id="expenses"></div>
-    <button class="add-btn" onclick="addRow('expenses','expense')">+ добавить</button>
+    <button class="add-btn" onclick="addRow('expenses','expense')" id="t-add-exp">+ добавить</button>
   </div>
 
-  <button class="calc-btn" onclick="calculate()">Посчитать</button>
+  <button class="calc-btn" onclick="calculate()" id="t-calc-btn">Посчитать</button>
 
   <div class="metrics" id="metrics" style="display:none;">
     <div class="metric">
-      <div class="metric-label">Используемый лимит</div>
+      <div class="metric-label" id="t-m-limit-label">Используемый лимит</div>
       <div class="metric-value" id="m-limit">—</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Мин. баланс</div>
+      <div class="metric-label" id="t-m-min-label">Мин. баланс</div>
       <div class="metric-value" id="m-min">—</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Дней до конца</div>
+      <div class="metric-label" id="t-m-days-label">Дней до конца</div>
       <div class="metric-value" id="m-days">—</div>
     </div>
   </div>
 
   <div class="chart-wrap" id="chart-wrap">
     <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:#185FA5;"></span>баланс</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#A32D2D;"></span>провал ниже минимума</span>
-      <span class="legend-item"><span class="legend-dot" style="background:rgba(163,45,45,0.35); border: 1px dashed #A32D2D;"></span>мин. остаток</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#185FA5;"></span><span id="t-leg-balance">баланс</span></span>
+      <span class="legend-item"><span class="legend-dot" style="background:#A32D2D;"></span><span id="t-leg-danger">провал ниже минимума</span></span>
+      <span class="legend-item"><span class="legend-dot" style="background:rgba(163,45,45,0.35); border:1px dashed #A32D2D;"></span><span id="t-leg-min">мин. остаток</span></span>
     </div>
     <div style="position:relative; width:100%; height:220px;">
       <canvas id="chart"></canvas>
@@ -128,6 +141,111 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
 let chartInst = null;
+let lang = 'ru';
+let currency = 'rub';
+
+const T = {
+  ru: {
+    title: 'Калькулятор дневного лимита',
+    sectionMain: 'Стартовые данные',
+    balance: 'Баланс сейчас',
+    horizon: 'До какой даты',
+    minbal: 'Мин. остаток',
+    limitLabel: 'Дневной лимит',
+    hint: 'оставьте пустым — лимит посчитается автоматически',
+    incomes: 'Поступления',
+    expenses: 'Крупные траты',
+    sortBtn: 'по дате ↑',
+    addBtn: '+ добавить',
+    calcBtn: 'Посчитать',
+    mLimit: 'Используемый лимит',
+    mMin: 'Мин. баланс',
+    mDays: 'Дней до конца',
+    legBalance: 'баланс',
+    legDanger: 'провал ниже минимума',
+    legMin: 'мин. остаток',
+    rec: 'рекомендован',
+    noteAbove: 'лимит на {n} выше рекомендованного — красные точки покажут провалы',
+    noteBelow: 'лимит на {n} ниже рекомендованного — накопите запас',
+    noteEqual: 'лимит совпадает с рекомендованным — баланс финиширует у минимума',
+    placeholderSum: 'сумма',
+    placeholderName: 'название',
+    placeholderAuto: 'авто'
+  },
+  en: {
+    title: 'Daily Limit Calculator',
+    sectionMain: 'Starting data',
+    balance: 'Current balance',
+    horizon: 'Until date',
+    minbal: 'Min. balance',
+    limitLabel: 'Daily limit',
+    hint: 'leave empty — limit will be calculated automatically',
+    incomes: 'Income',
+    expenses: 'Expenses',
+    sortBtn: 'by date ↑',
+    addBtn: '+ add',
+    calcBtn: 'Calculate',
+    mLimit: 'Daily limit used',
+    mMin: 'Min. balance',
+    mDays: 'Days left',
+    legBalance: 'balance',
+    legDanger: 'below minimum',
+    legMin: 'min. balance',
+    rec: 'recommended',
+    noteAbove: 'limit is {n} above recommended — red dots show shortfalls',
+    noteBelow: 'limit is {n} below recommended — you will build a buffer',
+    noteEqual: 'limit matches recommended — balance will finish at minimum',
+    placeholderSum: 'amount',
+    placeholderName: 'name',
+    placeholderAuto: 'auto'
+  }
+};
+
+const C = {
+  rub: { sym: '₽', dec: 2, loc: 'ru', prefix: false },
+  usd: { sym: '$', dec: 2, loc: 'en-US', prefix: true }
+};
+
+function fmt(n) {
+  const c = C[currency];
+  const num = n.toLocaleString(c.loc, { minimumFractionDigits: c.dec, maximumFractionDigits: c.dec });
+  return c.prefix ? c.sym + num : num + ' ' + c.sym;
+}
+
+function applyLang() {
+  const t = T[lang];
+  const c = C[currency];
+  document.getElementById('t-title').textContent = t.title;
+  document.getElementById('t-section-main').textContent = t.sectionMain;
+  document.getElementById('t-balance').textContent = t.balance + ', ' + c.sym;
+  document.getElementById('t-horizon').textContent = t.horizon;
+  document.getElementById('t-minbal').textContent = t.minbal + ', ' + c.sym;
+  document.getElementById('t-limit-label').textContent = t.limitLabel + ', ' + c.sym;
+  document.getElementById('t-hint').textContent = t.hint;
+  document.getElementById('t-incomes').textContent = t.incomes;
+  document.getElementById('t-expenses').textContent = t.expenses;
+  document.getElementById('t-sort-btn-inc').textContent = t.sortBtn;
+  document.getElementById('t-sort-btn-exp').textContent = t.sortBtn;
+  document.getElementById('t-add-inc').textContent = t.addBtn;
+  document.getElementById('t-add-exp').textContent = t.addBtn;
+  document.getElementById('t-calc-btn').textContent = t.calcBtn;
+  document.getElementById('t-m-limit-label').textContent = t.mLimit;
+  document.getElementById('t-m-min-label').textContent = t.mMin;
+  document.getElementById('t-m-days-label').textContent = t.mDays;
+  document.getElementById('t-leg-balance').textContent = t.legBalance;
+  document.getElementById('t-leg-danger').textContent = t.legDanger;
+  document.getElementById('t-leg-min').textContent = t.legMin;
+  document.getElementById('custom-limit').placeholder = t.placeholderAuto;
+  document.querySelectorAll('.income-sum, .expense-sum').forEach(function(el) { el.placeholder = t.placeholderSum + ' ' + c.sym; });
+  document.querySelectorAll('.income-label, .expense-label').forEach(function(el) { el.placeholder = t.placeholderName; });
+  document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-rub').classList.toggle('active', currency === 'rub');
+  document.getElementById('btn-usd').classList.toggle('active', currency === 'usd');
+}
+
+function setLang(l) { lang = l; applyLang(); saveState(); }
+function setCurrency(cur) { currency = cur; applyLang(); saveState(); calculate(); }
 
 function today() { return new Date().toISOString().split('T')[0]; }
 
@@ -140,24 +258,28 @@ function setHorizon() {
 function sortContainer(containerId, type) {
   const c = document.getElementById(containerId);
   const rows = Array.from(c.querySelectorAll('.entry-row'));
-  rows.sort((a, b) => {
+  rows.sort(function(a, b) {
     const da = a.querySelector('.' + type + '-date').value || '9999';
     const db = b.querySelector('.' + type + '-date').value || '9999';
     return da.localeCompare(db);
   });
-  rows.forEach(r => c.appendChild(r));
+  rows.forEach(function(r) { c.appendChild(r); });
 }
 
-function addRow(containerId, type) {
-  const c = document.getElementById(containerId);
+function addRow(containerId, type) { addRowWithData(containerId, type, today(), '', ''); }
+
+function addRowWithData(containerId, type, date, sum, label) {
+  const t = T[lang];
+  const c = C[currency];
+  const el = document.getElementById(containerId);
   const div = document.createElement('div');
   div.className = 'row entry-row';
   div.innerHTML =
-    '<input type="date" class="' + type + '-date" value="' + today() + '" style="max-width:145px;">' +
-    '<input type="number" class="' + type + '-sum" placeholder="сумма ₽" style="max-width:115px;">' +
-    '<input type="text" class="' + type + '-label" placeholder="название">' +
+    '<input type="date" class="' + type + '-date" value="' + (date || today()) + '" style="max-width:145px;">' +
+    '<input type="number" class="' + type + '-sum" placeholder="' + t.placeholderSum + ' ' + c.sym + '" style="max-width:115px;" value="' + (sum || '') + '" step="0.01">' +
+    '<input type="text" class="' + type + '-label" placeholder="' + t.placeholderName + '" value="' + (label || '') + '">' +
     '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>';
-  c.appendChild(div);
+  el.appendChild(div);
 }
 
 function getRows(type) {
@@ -175,7 +297,7 @@ function getRows(type) {
 function calcRecommended(balance, minBal, days, incomes, expenses) {
   const totalIn = incomes.reduce(function(s, r) { return s + r.sum; }, 0);
   const totalOut = expenses.reduce(function(s, r) { return s + r.sum; }, 0);
-  return Math.max(0, Math.round((balance + totalIn - totalOut - minBal) / days));
+  return Math.max(0, (balance + totalIn - totalOut - minBal) / days);
 }
 
 function calculate() {
@@ -192,7 +314,7 @@ function calculate() {
   const incomes = getRows('income');
   const expenses = getRows('expense');
   const recommended = calcRecommended(balance, minBal, days, incomes, expenses);
-  document.getElementById('rec-badge').textContent = 'рекомендован: ' + recommended.toLocaleString('ru') + ' ₽';
+  document.getElementById('rec-badge').textContent = T[lang].rec + ': ' + fmt(recommended);
 
   const customVal = document.getElementById('custom-limit').value;
   const dailyLimit = customVal ? Math.max(0, parseFloat(customVal)) : recommended;
@@ -210,17 +332,18 @@ function calculate() {
       incomes.forEach(function(r) { if (r.date === ds) cur += r.sum; });
       expenses.forEach(function(r) { if (r.date === ds) cur -= r.sum; });
     }
-    balances.push(Math.round(cur));
-    dangerPoints.push(cur < minBal ? Math.round(cur) : null);
+    const rounded = parseFloat(cur.toFixed(2));
+    balances.push(rounded);
+    dangerPoints.push(rounded < minBal ? rounded : null);
   }
 
   const minBalance = Math.min.apply(null, balances);
   const skip = Math.ceil(days / 30);
   const visLabels = labels.map(function(l, i) { return i % skip === 0 ? l : ''; });
 
-  document.getElementById('m-limit').textContent = Math.round(dailyLimit).toLocaleString('ru') + ' ₽';
-  document.getElementById('m-limit').className = 'metric-value ' + (dailyLimit > recommended ? 'danger' : 'success');
-  document.getElementById('m-min').textContent = minBalance.toLocaleString('ru') + ' ₽';
+  document.getElementById('m-limit').textContent = fmt(dailyLimit);
+  document.getElementById('m-limit').className = 'metric-value ' + (dailyLimit > recommended + 0.005 ? 'danger' : 'success');
+  document.getElementById('m-min').textContent = fmt(minBalance);
   document.getElementById('m-min').className = 'metric-value ' + (minBalance < minBal ? 'danger' : 'success');
   document.getElementById('m-days').textContent = days;
   document.getElementById('metrics').style.display = 'grid';
@@ -233,9 +356,9 @@ function calculate() {
     data: {
       labels: visLabels,
       datasets: [
-        { label: 'баланс', data: balances, borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)', borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.2 },
-        { label: 'провал', data: dangerPoints, borderColor: '#A32D2D', borderWidth: 0, pointRadius: 3, pointBackgroundColor: '#A32D2D', fill: false },
-        { label: 'мин. остаток', data: Array(balances.length).fill(minBal), borderColor: 'rgba(163,45,45,0.4)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false }
+        { label: T[lang].legBalance, data: balances, borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)', borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.2 },
+        { label: T[lang].legDanger, data: dangerPoints, borderColor: '#A32D2D', borderWidth: 0, pointRadius: 3, pointBackgroundColor: '#A32D2D', fill: false },
+        { label: T[lang].legMin, data: Array(balances.length).fill(minBal), borderColor: 'rgba(163,45,45,0.4)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false }
       ]
     },
     options: {
@@ -244,47 +367,40 @@ function calculate() {
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: { label: function(ctx) {
-          if (ctx.dataset.label === 'провал' && ctx.raw === null) return null;
-          return ctx.dataset.label + ': ' + (ctx.raw !== null ? ctx.raw.toLocaleString('ru') + ' ₽' : '');
+          if (ctx.raw === null) return null;
+          return ctx.dataset.label + ': ' + fmt(ctx.raw);
         }}}
       },
       scales: {
         x: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, color: '#888', callback: function(v) { return v.toLocaleString('ru'); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+        y: { ticks: { font: { size: 11 }, color: '#888', callback: function(v) { return fmt(v); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
       }
     }
   });
 
   const note = document.getElementById('chart-note');
   note.style.display = 'block';
-  const diff = Math.round(dailyLimit) - recommended;
-  if (diff > 0) note.textContent = 'лимит на ' + diff.toLocaleString('ru') + ' ₽/день выше рекомендованного — красные точки покажут провалы';
-  else if (diff < 0) note.textContent = 'лимит на ' + Math.abs(diff).toLocaleString('ru') + ' ₽/день ниже рекомендованного — накопите запас';
-  else note.textContent = 'лимит совпадает с рекомендованным — баланс финиширует у минимума';
+  const diff = dailyLimit - recommended;
+  const t = T[lang];
+  if (diff > 0.005) note.textContent = t.noteAbove.replace('{n}', fmt(Math.abs(diff)));
+  else if (diff < -0.005) note.textContent = t.noteBelow.replace('{n}', fmt(Math.abs(diff)));
+  else note.textContent = t.noteEqual;
 }
 
 function saveState() {
   const state = {
+    lang: lang, currency: currency,
     balance: document.getElementById('balance').value,
     horizon: document.getElementById('horizon').value,
     minbal: document.getElementById('minbal').value,
     customLimit: document.getElementById('custom-limit').value,
-    incomes: [],
-    expenses: []
+    incomes: [], expenses: []
   };
   document.querySelectorAll('#incomes .entry-row').forEach(function(row) {
-    state.incomes.push({
-      date: row.querySelector('.income-date').value,
-      sum: row.querySelector('.income-sum').value,
-      label: row.querySelector('.income-label').value
-    });
+    state.incomes.push({ date: row.querySelector('.income-date').value, sum: row.querySelector('.income-sum').value, label: row.querySelector('.income-label').value });
   });
   document.querySelectorAll('#expenses .entry-row').forEach(function(row) {
-    state.expenses.push({
-      date: row.querySelector('.expense-date').value,
-      sum: row.querySelector('.expense-sum').value,
-      label: row.querySelector('.expense-label').value
-    });
+    state.expenses.push({ date: row.querySelector('.expense-date').value, sum: row.querySelector('.expense-sum').value, label: row.querySelector('.expense-label').value });
   });
   localStorage.setItem('cashflow_state', JSON.stringify(state));
 }
@@ -294,30 +410,16 @@ function loadState() {
   if (!raw) return false;
   try {
     const state = JSON.parse(raw);
+    if (state.lang) lang = state.lang;
+    if (state.currency) currency = state.currency;
     document.getElementById('balance').value = state.balance || '';
     document.getElementById('horizon').value = state.horizon || '';
     document.getElementById('minbal').value = state.minbal || '';
     document.getElementById('custom-limit').value = state.customLimit || '';
-    (state.incomes || []).forEach(function(r) {
-      addRowWithData('incomes', 'income', r.date, r.sum, r.label);
-    });
-    (state.expenses || []).forEach(function(r) {
-      addRowWithData('expenses', 'expense', r.date, r.sum, r.label);
-    });
+    (state.incomes || []).forEach(function(r) { addRowWithData('incomes', 'income', r.date, r.sum, r.label); });
+    (state.expenses || []).forEach(function(r) { addRowWithData('expenses', 'expense', r.date, r.sum, r.label); });
     return true;
   } catch(e) { return false; }
-}
-
-function addRowWithData(containerId, type, date, sum, label) {
-  const c = document.getElementById(containerId);
-  const div = document.createElement('div');
-  div.className = 'row entry-row';
-  div.innerHTML =
-    '<input type="date" class="' + type + '-date" value="' + (date||today()) + '" style="max-width:145px;">' +
-    '<input type="number" class="' + type + '-sum" placeholder="сумма ₽" style="max-width:115px;" value="' + (sum||'') + '">' +
-    '<input type="text" class="' + type + '-label" placeholder="название" value="' + (label||'') + '">' +
-    '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>';
-  c.appendChild(div);
 }
 
 document.addEventListener('input', saveState);
@@ -329,6 +431,7 @@ if (!loaded) {
   addRow('incomes', 'income');
   addRow('expenses', 'expense');
 }
+applyLang();
 calculate();
 </script>
 <script>
