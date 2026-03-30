@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор дневного лимита</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; padding: 1.5rem 1rem; }
+.container { max-width: 560px; margin: 0 auto; }
+h1 { font-size: 18px; font-weight: 500; margin-bottom: 1.5rem; color: #1a1a1a; }
+.section { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+.sort-btn { background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 3px 10px; font-size: 12px; cursor: pointer; color: #666; }
+.sort-btn:hover { background: #f5f5f3; }
+.row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+input[type=text], input[type=number], input[type=date] {
+  border: 0.5px solid rgba(0,0,0,0.18); border-radius: 8px; padding: 6px 10px;
+  font-size: 14px; width: 100%; background: #fff; color: #1a1a1a; outline: none;
+  font-family: inherit;
+}
+input:focus { border-color: rgba(0,0,0,0.4); }
+.del-btn { background: none; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 8px; width: 28px; height: 28px; cursor: pointer; color: #888; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.del-btn:hover { background: #f5f5f3; }
+.add-btn { background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; color: #666; margin-top: 4px; }
+.add-btn:hover { background: #f5f5f3; }
+.limit-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 0.5px solid rgba(0,0,0,0.08); flex-wrap: wrap; }
+.rec-badge { font-size: 12px; color: #185FA5; background: #E6F1FB; border-radius: 8px; padding: 3px 10px; white-space: nowrap; }
+.hint { font-size: 12px; color: #aaa; margin-top: 6px; }
+.field-row { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.field-row label { font-size: 13px; color: #666; white-space: nowrap; min-width: 130px; }
+.field-row input { max-width: 160px; }
+.calc-btn { width: 100%; padding: 11px; background: #1a1a1a; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; color: #fff; margin-bottom: 1rem; }
+.calc-btn:hover { background: #333; }
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 1rem; }
+.metric { background: #f5f5f3; border-radius: 8px; padding: 12px; }
+.metric-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+.metric-value { font-size: 17px; font-weight: 500; color: #1a1a1a; }
+.metric-value.danger { color: #A32D2D; }
+.metric-value.success { color: #3B6D11; }
+.chart-wrap { position: relative; width: 100%; height: 280px; background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem; margin-bottom: 8px; display: none; }
+.chart-note { font-size: 12px; color: #aaa; text-align: center; margin-bottom: 1rem; display: none; }
+.legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
+.legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Калькулятор дневного лимита</h1>
+
+  <div class="section">
+    <div class="section-title" style="margin-bottom:12px;">Стартовые данные</div>
+    <div class="field-row">
+      <label>Баланс сейчас, ₽</label>
+      <input type="number" id="balance" value="50000">
+    </div>
+    <div class="field-row">
+      <label>До какой даты</label>
+      <input type="date" id="horizon">
+    </div>
+    <div class="field-row">
+      <label>Мин. остаток, ₽</label>
+      <input type="number" id="minbal" value="5000">
+    </div>
+    <div class="limit-row">
+      <label style="font-size:13px; color:#666; white-space:nowrap;">Дневной лимит, ₽</label>
+      <input type="number" id="custom-limit" placeholder="авто" style="max-width:130px;">
+      <span class="rec-badge" id="rec-badge">рекомендован: —</span>
+    </div>
+    <div class="hint">оставьте пустым — лимит посчитается автоматически</div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Поступления</div>
+      <button class="sort-btn" onclick="sortContainer('incomes','income')">по дате ↑</button>
+    </div>
+    <div id="incomes"></div>
+    <button class="add-btn" onclick="addRow('incomes','income')">+ добавить</button>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Крупные траты</div>
+      <button class="sort-btn" onclick="sortContainer('expenses','expense')">по дате ↑</button>
+    </div>
+    <div id="expenses"></div>
+    <button class="add-btn" onclick="addRow('expenses','expense')">+ добавить</button>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()">Посчитать</button>
+
+  <div class="metrics" id="metrics" style="display:none;">
+    <div class="metric">
+      <div class="metric-label">Используемый лимит</div>
+      <div class="metric-value" id="m-limit">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Мин. баланс</div>
+      <div class="metric-value" id="m-min">—</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Дней до конца</div>
+      <div class="metric-value" id="m-days">—</div>
+    </div>
+  </div>
+
+  <div class="chart-wrap" id="chart-wrap">
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#185FA5;"></span>баланс</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#A32D2D;"></span>провал ниже минимума</span>
+      <span class="legend-item"><span class="legend-dot" style="background:rgba(163,45,45,0.35); border: 1px dashed #A32D2D;"></span>мин. остаток</span>
+    </div>
+    <div style="position:relative; width:100%; height:220px;">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+  <div class="chart-note" id="chart-note"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let chartInst = null;
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function setHorizon() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 2);
+  document.getElementById('horizon').value = d.toISOString().split('T')[0];
+}
+
+function sortContainer(containerId, type) {
+  const c = document.getElementById(containerId);
+  const rows = Array.from(c.querySelectorAll('.entry-row'));
+  rows.sort((a, b) => {
+    const da = a.querySelector('.' + type + '-date').value || '9999';
+    const db = b.querySelector('.' + type + '-date').value || '9999';
+    return da.localeCompare(db);
+  });
+  rows.forEach(r => c.appendChild(r));
+}
+
+function addRow(containerId, type) {
+  const c = document.getElementById(containerId);
+  const div = document.createElement('div');
+  div.className = 'row entry-row';
+  div.innerHTML =
+    '<input type="date" class="' + type + '-date" value="' + today() + '" style="max-width:145px;">' +
+    '<input type="number" class="' + type + '-sum" placeholder="сумма ₽" style="max-width:115px;">' +
+    '<input type="text" class="' + type + '-label" placeholder="название">' +
+    '<button class="del-btn" onclick="this.parentElement.remove()">×</button>';
+  c.appendChild(div);
+}
+
+function getRows(type) {
+  const dates = document.querySelectorAll('.' + type + '-date');
+  const sums = document.querySelectorAll('.' + type + '-sum');
+  const labels = document.querySelectorAll('.' + type + '-label');
+  const result = [];
+  for (let i = 0; i < dates.length; i++) {
+    const s = parseFloat(sums[i].value);
+    if (dates[i].value && s > 0) result.push({ date: dates[i].value, sum: s, label: labels[i].value || '' });
+  }
+  return result;
+}
+
+function calcRecommended(balance, minBal, days, incomes, expenses) {
+  const totalIn = incomes.reduce(function(s, r) { return s + r.sum; }, 0);
+  const totalOut = expenses.reduce(function(s, r) { return s + r.sum; }, 0);
+  return Math.max(0, Math.round((balance + totalIn - totalOut - minBal) / days));
+}
+
+function calculate() {
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const horizon = document.getElementById('horizon').value;
+  const minBal = parseFloat(document.getElementById('minbal').value) || 0;
+  if (!horizon) return;
+
+  const start = new Date(today());
+  const end = new Date(horizon);
+  const days = Math.round((end - start) / 86400000);
+  if (days <= 0) return;
+
+  const incomes = getRows('income');
+  const expenses = getRows('expense');
+  const recommended = calcRecommended(balance, minBal, days, incomes, expenses);
+  document.getElementById('rec-badge').textContent = 'рекомендован: ' + recommended.toLocaleString('ru') + ' ₽';
+
+  const customVal = document.getElementById('custom-limit').value;
+  const dailyLimit = customVal ? Math.max(0, parseFloat(customVal)) : recommended;
+
+  const labels = [], balances = [], dangerPoints = [];
+  let cur = balance;
+
+  for (let d = 0; d <= days; d++) {
+    const dt = new Date(start);
+    dt.setDate(dt.getDate() + d);
+    const ds = dt.toISOString().split('T')[0];
+    labels.push(ds.slice(5));
+    if (d > 0) {
+      cur -= dailyLimit;
+      incomes.forEach(function(r) { if (r.date === ds) cur += r.sum; });
+      expenses.forEach(function(r) { if (r.date === ds) cur -= r.sum; });
+    }
+    balances.push(Math.round(cur));
+    dangerPoints.push(cur < minBal ? Math.round(cur) : null);
+  }
+
+  const minBalance = Math.min.apply(null, balances);
+  const skip = Math.ceil(days / 30);
+  const visLabels = labels.map(function(l, i) { return i % skip === 0 ? l : ''; });
+
+  document.getElementById('m-limit').textContent = Math.round(dailyLimit).toLocaleString('ru') + ' ₽';
+  document.getElementById('m-limit').className = 'metric-value ' + (dailyLimit > recommended ? 'danger' : 'success');
+  document.getElementById('m-min').textContent = minBalance.toLocaleString('ru') + ' ₽';
+  document.getElementById('m-min').className = 'metric-value ' + (minBalance < minBal ? 'danger' : 'success');
+  document.getElementById('m-days').textContent = days;
+  document.getElementById('metrics').style.display = 'grid';
+
+  if (chartInst) chartInst.destroy();
+  document.getElementById('chart-wrap').style.display = 'block';
+
+  chartInst = new Chart(document.getElementById('chart'), {
+    type: 'line',
+    data: {
+      labels: visLabels,
+      datasets: [
+        { label: 'баланс', data: balances, borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)', borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.2 },
+        { label: 'провал', data: dangerPoints, borderColor: '#A32D2D', borderWidth: 0, pointRadius: 3, pointBackgroundColor: '#A32D2D', fill: false },
+        { label: 'мин. остаток', data: Array(balances.length).fill(minBal), borderColor: 'rgba(163,45,45,0.4)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) {
+          if (ctx.dataset.label === 'провал' && ctx.raw === null) return null;
+          return ctx.dataset.label + ': ' + (ctx.raw !== null ? ctx.raw.toLocaleString('ru') + ' ₽' : '');
+        }}}
+      },
+      scales: {
+        x: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, color: '#888', callback: function(v) { return v.toLocaleString('ru'); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+      }
+    }
+  });
+
+  const note = document.getElementById('chart-note');
+  note.style.display = 'block';
+  const diff = Math.round(dailyLimit) - recommended;
+  if (diff > 0) note.textContent = 'лимит на ' + diff.toLocaleString('ru') + ' ₽/день выше рекомендованного — красные точки покажут провалы';
+  else if (diff < 0) note.textContent = 'лимит на ' + Math.abs(diff).toLocaleString('ru') + ' ₽/день ниже рекомендованного — накопите запас';
+  else note.textContent = 'лимит совпадает с рекомендованным — баланс финиширует у минимума';
+}
+
+setHorizon();
+addRow('incomes', 'income');
+addRow('expenses', 'expense');
+</script>
+</body>
+</html>
