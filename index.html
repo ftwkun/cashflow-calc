@@ -258,9 +258,73 @@ function calculate() {
   else note.textContent = 'лимит совпадает с рекомендованным — баланс финиширует у минимума';
 }
 
-setHorizon();
-addRow('incomes', 'income');
-addRow('expenses', 'expense');
+function saveState() {
+  const state = {
+    balance: document.getElementById('balance').value,
+    horizon: document.getElementById('horizon').value,
+    minbal: document.getElementById('minbal').value,
+    customLimit: document.getElementById('custom-limit').value,
+    incomes: [],
+    expenses: []
+  };
+  document.querySelectorAll('#incomes .entry-row').forEach(function(row) {
+    state.incomes.push({
+      date: row.querySelector('.income-date').value,
+      sum: row.querySelector('.income-sum').value,
+      label: row.querySelector('.income-label').value
+    });
+  });
+  document.querySelectorAll('#expenses .entry-row').forEach(function(row) {
+    state.expenses.push({
+      date: row.querySelector('.expense-date').value,
+      sum: row.querySelector('.expense-sum').value,
+      label: row.querySelector('.expense-label').value
+    });
+  });
+  localStorage.setItem('cashflow_state', JSON.stringify(state));
+}
+
+function loadState() {
+  const raw = localStorage.getItem('cashflow_state');
+  if (!raw) return false;
+  try {
+    const state = JSON.parse(raw);
+    document.getElementById('balance').value = state.balance || '';
+    document.getElementById('horizon').value = state.horizon || '';
+    document.getElementById('minbal').value = state.minbal || '';
+    document.getElementById('custom-limit').value = state.customLimit || '';
+    (state.incomes || []).forEach(function(r) {
+      addRowWithData('incomes', 'income', r.date, r.sum, r.label);
+    });
+    (state.expenses || []).forEach(function(r) {
+      addRowWithData('expenses', 'expense', r.date, r.sum, r.label);
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+function addRowWithData(containerId, type, date, sum, label) {
+  const c = document.getElementById(containerId);
+  const div = document.createElement('div');
+  div.className = 'row entry-row';
+  div.innerHTML =
+    '<input type="date" class="' + type + '-date" value="' + (date||today()) + '" style="max-width:145px;">' +
+    '<input type="number" class="' + type + '-sum" placeholder="сумма ₽" style="max-width:115px;" value="' + (sum||'') + '">' +
+    '<input type="text" class="' + type + '-label" placeholder="название" value="' + (label||'') + '">' +
+    '<button class="del-btn" onclick="this.parentElement.remove()">×</button>';
+  c.appendChild(div);
+}
+
+document.addEventListener('input', saveState);
+document.addEventListener('change', saveState);
+
+const loaded = loadState();
+if (!loaded) {
+  setHorizon();
+  addRow('incomes', 'income');
+  addRow('expenses', 'expense');
+}
+calculate();
 </script>
 </body>
 </html>
