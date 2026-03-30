@@ -54,6 +54,10 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #666; }
 .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+.freq { display: flex; gap: 4px; flex-shrink: 0; }
+.freq label { font-size: 11px; color: #888; cursor: pointer; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 2px 6px; white-space: nowrap; user-select: none; }
+.freq input[type=radio] { display: none; }
+.freq input[type=radio]:checked + label { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
 </style>
 </head>
 <body>
@@ -170,7 +174,11 @@ const T = {
     noteEqual: 'лимит совпадает с рекомендованным — баланс финиширует у минимума',
     placeholderSum: 'сумма',
     placeholderName: 'название',
-    placeholderAuto: 'авто'
+    placeholderAuto: 'авто',
+    freqOnce: 'раз',
+    freqDaily: 'день',
+    freqMonthly: 'мес',
+    freqWeekly: 'нед'
   },
   en: {
     title: 'Daily Limit Calculator',
@@ -197,7 +205,11 @@ const T = {
     noteEqual: 'limit matches recommended — balance will finish at minimum',
     placeholderSum: 'amount',
     placeholderName: 'name',
-    placeholderAuto: 'auto'
+    placeholderAuto: 'auto',
+    freqOnce: 'once',
+    freqDaily: 'day',
+    freqMonthly: 'mo',
+    freqWeekly: 'wk'
   }
 };
 
@@ -238,6 +250,17 @@ function applyLang() {
   document.getElementById('custom-limit').placeholder = t.placeholderAuto;
   document.querySelectorAll('.income-sum, .expense-sum').forEach(function(el) { el.placeholder = t.placeholderSum + ' ' + c.sym; });
   document.querySelectorAll('.income-label, .expense-label').forEach(function(el) { el.placeholder = t.placeholderName; });
+  document.querySelectorAll('.entry-row').forEach(function(row) {
+    var radios = row.querySelectorAll('input[type=radio]');
+    radios.forEach(function(r) {
+      var lbl = row.querySelector('label[for="' + r.id + '"]');
+      if (!lbl) return;
+      if (r.value === 'once') lbl.textContent = t.freqOnce;
+      else if (r.value === 'daily') lbl.textContent = t.freqDaily;
+      else if (r.value === 'monthly') lbl.textContent = t.freqMonthly;
+      else if (r.value === 'weekly') lbl.textContent = t.freqWeekly;
+    });
+  });
   document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
   document.getElementById('btn-rub').classList.toggle('active', currency === 'rub');
@@ -266,31 +289,64 @@ function sortContainer(containerId, type) {
   rows.forEach(function(r) { c.appendChild(r); });
 }
 
-function addRow(containerId, type) { addRowWithData(containerId, type, today(), '', ''); }
+function addRow(containerId, type) { addRowWithData(containerId, type, today(), '', '', 'once'); }
 
-function addRowWithData(containerId, type, date, sum, label) {
+function addRowWithData(containerId, type, date, sum, label, freq) {
   const t = T[lang];
   const c = C[currency];
   const el = document.getElementById(containerId);
   const div = document.createElement('div');
   div.className = 'row entry-row';
+  const uid = Math.random().toString(36).slice(2, 8);
+  const f = freq || 'once';
   div.innerHTML =
-    '<input type="date" class="' + type + '-date" value="' + (date || today()) + '" style="max-width:145px;">' +
-    '<input type="number" class="' + type + '-sum" placeholder="' + t.placeholderSum + ' ' + c.sym + '" style="max-width:115px;" value="' + (sum || '') + '" step="0.01">' +
-    '<input type="text" class="' + type + '-label" placeholder="' + t.placeholderName + '" value="' + (label || '') + '">' +
+    '<input type="date" class="' + type + '-date" value="' + (date || today()) + '" style="max-width:130px;">' +
+    '<input type="number" class="' + type + '-sum" placeholder="' + t.placeholderSum + ' ' + c.sym + '" style="max-width:100px;" value="' + (sum || '') + '" step="0.01">' +
+    '<input type="text" class="' + type + '-label" placeholder="' + t.placeholderName + '" value="' + (label || '') + '" style="min-width:0;">' +
+    '<div class="freq">' +
+      '<input type="radio" name="freq-' + uid + '" id="fo-' + uid + '" class="' + type + '-freq" value="once"' + (f === 'once' ? ' checked' : '') + '><label for="fo-' + uid + '">' + t.freqOnce + '</label>' +
+      '<input type="radio" name="freq-' + uid + '" id="fd-' + uid + '" class="' + type + '-freq" value="daily"' + (f === 'daily' ? ' checked' : '') + '><label for="fd-' + uid + '">' + t.freqDaily + '</label>' +
+      '<input type="radio" name="freq-' + uid + '" id="fm-' + uid + '" class="' + type + '-freq" value="monthly"' + (f === 'monthly' ? ' checked' : '') + '><label for="fm-' + uid + '">' + t.freqMonthly + '</label>' +
+      '<input type="radio" name="freq-' + uid + '" id="fw-' + uid + '" class="' + type + '-freq" value="weekly"' + (f === 'weekly' ? ' checked' : '') + '><label for="fw-' + uid + '">' + t.freqWeekly + '</label>' +
+    '</div>' +
     '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>';
   el.appendChild(div);
 }
 
 function getRows(type) {
-  const dates = document.querySelectorAll('.' + type + '-date');
-  const sums = document.querySelectorAll('.' + type + '-sum');
-  const labels = document.querySelectorAll('.' + type + '-label');
+  const rows = document.querySelectorAll('#' + (type === 'income' ? 'incomes' : 'expenses') + ' .entry-row');
   const result = [];
-  for (let i = 0; i < dates.length; i++) {
-    const s = parseFloat(sums[i].value);
-    if (dates[i].value && s > 0) result.push({ date: dates[i].value, sum: s, label: labels[i].value || '' });
-  }
+  rows.forEach(function(row) {
+    const dateEl = row.querySelector('.' + type + '-date');
+    const sumEl = row.querySelector('.' + type + '-sum');
+    const labelEl = row.querySelector('.' + type + '-label');
+    const freqEl = row.querySelector('.' + type + '-freq:checked');
+    const s = parseFloat(sumEl.value);
+    if (dateEl.value && s > 0) {
+      result.push({ date: dateEl.value, sum: s, label: labelEl.value || '', freq: freqEl ? freqEl.value : 'once' });
+    }
+  });
+  return result;
+}
+
+function expandRows(rows, startDate, endDate) {
+  const result = [];
+  rows.forEach(function(r) {
+    if (r.freq === 'once') {
+      result.push({ date: r.date, sum: r.sum });
+    } else {
+      const dt = new Date(r.date);
+      const end = new Date(endDate);
+      while (dt <= end) {
+        if (dt >= new Date(startDate)) {
+          result.push({ date: dt.toISOString().split('T')[0], sum: r.sum });
+        }
+        if (r.freq === 'monthly') dt.setMonth(dt.getMonth() + 1);
+        else if (r.freq === 'weekly') dt.setDate(dt.getDate() + 7);
+        else dt.setDate(dt.getDate() + 1);
+      }
+    }
+  });
   return result;
 }
 
@@ -313,7 +369,9 @@ function calculate() {
 
   const incomes = getRows('income');
   const expenses = getRows('expense');
-  const recommended = calcRecommended(balance, minBal, days, incomes, expenses);
+  const expandedInc = expandRows(incomes, today(), horizon);
+  const expandedExp = expandRows(expenses, today(), horizon);
+  const recommended = calcRecommended(balance, minBal, days, expandedInc, expandedExp);
   document.getElementById('rec-badge').textContent = T[lang].rec + ': ' + fmt(recommended);
 
   const customVal = document.getElementById('custom-limit').value;
@@ -329,8 +387,8 @@ function calculate() {
     labels.push(ds.slice(5));
     if (d > 0) {
       cur -= dailyLimit;
-      incomes.forEach(function(r) { if (r.date === ds) cur += r.sum; });
-      expenses.forEach(function(r) { if (r.date === ds) cur -= r.sum; });
+      expandedInc.forEach(function(r) { if (r.date === ds) cur += r.sum; });
+      expandedExp.forEach(function(r) { if (r.date === ds) cur -= r.sum; });
     }
     const rounded = parseFloat(cur.toFixed(2));
     balances.push(rounded);
@@ -366,10 +424,16 @@ function calculate() {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: function(ctx) {
-          if (ctx.raw === null) return null;
-          return ctx.dataset.label + ': ' + fmt(ctx.raw);
-        }}}
+        tooltip: { callbacks: {
+          title: function(items) {
+            if (!items.length) return '';
+            return labels[items[0].dataIndex] || '';
+          },
+          label: function(ctx) {
+            if (ctx.raw === null) return null;
+            return ctx.dataset.label + ': ' + fmt(ctx.raw);
+          }
+        }}
       },
       scales: {
         x: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } },
@@ -397,10 +461,12 @@ function saveState() {
     incomes: [], expenses: []
   };
   document.querySelectorAll('#incomes .entry-row').forEach(function(row) {
-    state.incomes.push({ date: row.querySelector('.income-date').value, sum: row.querySelector('.income-sum').value, label: row.querySelector('.income-label').value });
+    const freqEl = row.querySelector('.income-freq:checked');
+    state.incomes.push({ date: row.querySelector('.income-date').value, sum: row.querySelector('.income-sum').value, label: row.querySelector('.income-label').value, freq: freqEl ? freqEl.value : 'once' });
   });
   document.querySelectorAll('#expenses .entry-row').forEach(function(row) {
-    state.expenses.push({ date: row.querySelector('.expense-date').value, sum: row.querySelector('.expense-sum').value, label: row.querySelector('.expense-label').value });
+    const freqEl = row.querySelector('.expense-freq:checked');
+    state.expenses.push({ date: row.querySelector('.expense-date').value, sum: row.querySelector('.expense-sum').value, label: row.querySelector('.expense-label').value, freq: freqEl ? freqEl.value : 'once' });
   });
   localStorage.setItem('cashflow_state', JSON.stringify(state));
 }
@@ -416,8 +482,8 @@ function loadState() {
     document.getElementById('horizon').value = state.horizon || '';
     document.getElementById('minbal').value = state.minbal || '';
     document.getElementById('custom-limit').value = state.customLimit || '';
-    (state.incomes || []).forEach(function(r) { addRowWithData('incomes', 'income', r.date, r.sum, r.label); });
-    (state.expenses || []).forEach(function(r) { addRowWithData('expenses', 'expense', r.date, r.sum, r.label); });
+    (state.incomes || []).forEach(function(r) { addRowWithData('incomes', 'income', r.date, r.sum, r.label, r.freq || 'once'); });
+    (state.expenses || []).forEach(function(r) { addRowWithData('expenses', 'expense', r.date, r.sum, r.label, r.freq || 'once'); });
     return true;
   } catch(e) { return false; }
 }
