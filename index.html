@@ -156,7 +156,7 @@ function addRow(containerId, type) {
     '<input type="date" class="' + type + '-date" value="' + today() + '" style="max-width:145px;">' +
     '<input type="number" class="' + type + '-sum" placeholder="сумма ₽" style="max-width:115px;">' +
     '<input type="text" class="' + type + '-label" placeholder="название">' +
-    '<button class="del-btn" onclick="this.parentElement.remove()">×</button>';
+    '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>';
   c.appendChild(div);
 }
 
@@ -316,7 +316,7 @@ function addRowWithData(containerId, type, date, sum, label) {
     '<input type="date" class="' + type + '-date" value="' + (date||today()) + '" style="max-width:145px;">' +
     '<input type="number" class="' + type + '-sum" placeholder="сумма ₽" style="max-width:115px;" value="' + (sum||'') + '">' +
     '<input type="text" class="' + type + '-label" placeholder="название" value="' + (label||'') + '">' +
-    '<button class="del-btn" onclick="this.parentElement.remove()">×</button>';
+    '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>';
   c.appendChild(div);
 }
 
