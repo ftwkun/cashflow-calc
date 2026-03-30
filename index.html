@@ -58,6 +58,12 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 .freq label { font-size: 11px; color: #888; cursor: pointer; border: 0.5px solid rgba(0,0,0,0.15); border-radius: 6px; padding: 2px 6px; white-space: nowrap; user-select: none; }
 .freq input[type=radio] { display: none; }
 .freq input[type=radio]:checked + label { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.entry-row { flex-wrap: wrap; }
+.entry-row .freq { width: 100%; padding-left: 0; }
+@media (min-width: 480px) {
+  .entry-row { flex-wrap: nowrap; }
+  .entry-row .freq { width: auto; }
+}
 </style>
 </head>
 <body>
