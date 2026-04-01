@@ -226,7 +226,220 @@ input:focus { border-color: rgba(0,0,0,0.4); }
     </div>
   </div>
 
+  <div style="text-align:center; margin-bottom:2rem;">
+    <button class="add-btn" onclick="showQR()" id="qr-toggle-btn">QR бэкап ▾</button>
+  </div>
+
+  <div id="qr-section" style="display:none; margin-bottom:2rem;">
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px;">QR бэкап</div>
+      <div id="qr-size" style="font-size:11px; color:#888; margin-bottom:8px; text-align:center;"></div>
+      <div style="text-align:center; margin-bottom:12px;">
+        <div id="qr-canvas" style="display:inline-block; border-radius:8px; overflow:hidden;"></div>
+      </div>
+      <div style="font-size:12px; color:#888; margin-bottom:6px;">Восстановить из строки:</div>
+      <textarea id="qr-restore-input" rows="3" style="width:100%; font-size:11px; font-family:monospace; border:0.5px solid rgba(0,0,0,0.18); border-radius:8px; padding:8px; resize:vertical; color:#1a1a1a; background:#fff;" placeholder="вставьте строку из QR..."></textarea>
+      <button class="add-btn" style="margin-top:6px;" onclick="restoreFromQR()">Восстановить</button>
+    </div>
+  </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// QR helpers using qrcodejs
+let qrVisible = false;
+
+function showQR() {
+  qrVisible = !qrVisible;
+  const section = document.getElementById('qr-section');
+  const btn = document.getElementById('qr-toggle-btn');
+  section.style.display = qrVisible ? 'block' : 'none';
+  btn.textContent = qrVisible ? 'QR бэкап ▴' : 'QR бэкап ▾';
+  if (qrVisible) generateQR();
+}
+
+// ── Binary pack/unpack ──────────────────────────────────────────────
+// Epoch: 2020-01-01
+const EPOCH = new Date('2020-01-01').getTime();
+const MS_DAY = 86400000;
+const FREQ_MAP = { once: 0, daily: 1, weekly: 2, monthly: 3 };
+const FREQ_INV = ['once', 'daily', 'weekly', 'monthly'];
+
+function dateToDay(s) { return s ? Math.round((new Date(s).getTime() - EPOCH) / MS_DAY) : 0; }
+function dayToDate(d) { return new Date(EPOCH + d * MS_DAY).toISOString().split('T')[0]; }
+
+function packState() {
+  const raw = localStorage.getItem('cashflow_state');
+  if (!raw) return null;
+  const st = JSON.parse(raw);
+
+  const inc = st.incomes || [];
+  const exp = st.expenses || [];
+  const snaps = st.snapshots || [];
+
+  // estimate size: header(4) + horizon(2) + balance(4) + minbal(4) + customlimit(4)
+  // + 1 count each + per row: 2+4+1+1+label
+  // max label 31 chars * 3 bytes UTF8 = 93, but we store as UTF8 truncated
+  const labelBytes = function(s) {
+    const b = new TextEncoder().encode((s||'').slice(0,31));
+    return b;
+  };
+
+  const rows = function(arr) {
+    let n = 1; // count byte
+    arr.forEach(function(r) {
+      const lb = labelBytes(r.label || r.note || '');
+      n += 2 + 4 + 1 + 1 + lb.length; // date(2)+sum(4)+freq(1)+lablen(1)+lab
+    });
+    return n;
+  };
+  const snapSize = 1 + snaps.length * 6; // count + date(2)+bal(4)
+
+  const totalSize = 4 + 2 + 4 + 4 + 4 + rows(inc) + rows(exp) + snapSize;
+  const buf = new ArrayBuffer(totalSize);
+  const dv = new DataView(buf);
+  let pos = 0;
+
+  // header byte: bits [lang|currency|dark|0|0|0|0|0]
+  const flags = ((st.lang === 'en' ? 1 : 0) << 7) |
+                ((st.currency === 'usd' ? 1 : 0) << 6) |
+                ((st.darkTheme ? 1 : 0) << 5);
+  dv.setUint8(pos++, flags);
+  dv.setUint8(pos++, 0x43); // magic 'C'
+  dv.setUint8(pos++, 0x46); // magic 'F'
+  dv.setUint8(pos++, 0x02); // version 2
+
+  dv.setInt16(pos, dateToDay(st.horizon), false); pos += 2;
+  dv.setInt32(pos, Math.round((parseFloat(st.balance) || 0) * 100), false); pos += 4;
+  dv.setInt32(pos, Math.round((parseFloat(st.minbal) || 0) * 100), false); pos += 4;
+  dv.setInt32(pos, Math.round((parseFloat(st.customLimit) || 0) * 100), false); pos += 4;
+
+  function writeRows(arr) {
+    dv.setUint8(pos++, arr.length);
+    arr.forEach(function(r) {
+      const lb = labelBytes(r.label || '');
+      dv.setInt16(pos, dateToDay(r.date), false); pos += 2;
+      dv.setInt32(pos, Math.round((parseFloat(r.sum) || 0) * 100), false); pos += 4;
+      dv.setUint8(pos++, FREQ_MAP[r.freq] || 0);
+      dv.setUint8(pos++, lb.length);
+      lb.forEach(function(b) { dv.setUint8(pos++, b); });
+    });
+  }
+  writeRows(inc);
+  writeRows(exp);
+
+  // snapshots
+  dv.setUint8(pos++, snaps.length);
+  snaps.forEach(function(s) {
+    dv.setInt16(pos, dateToDay(s.date), false); pos += 2;
+    dv.setInt32(pos, Math.round((s.balance || 0) * 100), false); pos += 4;
+  });
+
+  // base64url encode
+  const bytes = new Uint8Array(buf, 0, pos);
+  let bin = '';
+  bytes.forEach(function(b) { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function unpackState(b64url) {
+  const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const dv = new DataView(bytes.buffer);
+  let pos = 0;
+
+  const flags = dv.getUint8(pos++);
+  const magic1 = dv.getUint8(pos++);
+  const magic2 = dv.getUint8(pos++);
+  const ver = dv.getUint8(pos++);
+  if (magic1 !== 0x43 || magic2 !== 0x46) throw new Error('bad magic');
+
+  const st = {
+    lang: (flags >> 7) & 1 ? 'en' : 'ru',
+    currency: (flags >> 6) & 1 ? 'usd' : 'rub',
+    darkTheme: !!((flags >> 5) & 1),
+    horizon: dayToDate(dv.getInt16(pos, false)), pos: (pos += 2, pos),
+    balance: String(dv.getInt32(pos, false) / 100), pos: (pos += 4, pos),
+    minbal: String(dv.getInt32(pos, false) / 100), pos: (pos += 4, pos),
+    customLimit: String(dv.getInt32(pos, false) / 100), pos: (pos += 4, pos),
+    incomes: [], expenses: [], snapshots: []
+  };
+  // fix: pos was overwritten by destructuring trick, read linearly
+  pos = 4 + 2 + 4 + 4 + 4;
+  st.horizon = dayToDate(dv.getInt16(4, false));
+  st.balance = String(dv.getInt32(6, false) / 100);
+  st.minbal = String(dv.getInt32(10, false) / 100);
+  st.customLimit = String(dv.getInt32(14, false) / 100);
+  pos = 18;
+
+  function readRows() {
+    const count = dv.getUint8(pos++);
+    const arr = [];
+    for (let i = 0; i < count; i++) {
+      const date = dayToDate(dv.getInt16(pos, false)); pos += 2;
+      const sum = String(dv.getInt32(pos, false) / 100); pos += 4;
+      const freq = FREQ_INV[dv.getUint8(pos++)] || 'once';
+      const llen = dv.getUint8(pos++);
+      const lb = bytes.slice(pos, pos + llen); pos += llen;
+      const label = new TextDecoder().decode(lb);
+      arr.push({ date, sum, label, freq });
+    }
+    return arr;
+  }
+  st.incomes = readRows();
+  st.expenses = readRows();
+
+  const snapCount = dv.getUint8(pos++);
+  for (let i = 0; i < snapCount; i++) {
+    const date = dayToDate(dv.getInt16(pos, false)); pos += 2;
+    const balance = dv.getInt32(pos, false) / 100; pos += 4;
+    st.snapshots.push({ date, balance });
+  }
+
+  return st;
+}
+
+async function generateQR() {
+  const packed = packState();
+  if (!packed) { document.getElementById('qr-size').textContent = 'нет данных'; return; }
+  const raw = localStorage.getItem('cashflow_state') || '';
+  document.getElementById('qr-size').textContent =
+    'JSON: ' + raw.length + ' б → упакован: ' + packed.length + ' б';
+
+  const container = document.getElementById('qr-canvas');
+  container.innerHTML = '';
+  try {
+    new QRCode(container, {
+      text: packed,
+      width: 512,
+      height: 512,
+      correctLevel: QRCode.CorrectLevel.L
+    });
+    setTimeout(function() {
+      const img = container.querySelector('img');
+      if (img) { img.style.width = '100%'; img.style.maxWidth = '512px'; img.style.height = 'auto'; }
+    }, 100);
+  } catch(e) {
+    container.innerHTML = '<div style="color:#A32D2D; font-size:13px;">Ошибка QR: ' + e.message + '</div>';
+  }
+}
+
+async function restoreFromQR() {
+  const input = document.getElementById('qr-restore-input').value.trim();
+  const ta = document.getElementById('qr-restore-input');
+  try {
+    const st = unpackState(input);
+    localStorage.setItem('cashflow_state', JSON.stringify(st));
+    ta.style.borderColor = '#3B6D11';
+    setTimeout(function() { ta.style.borderColor = ''; location.reload(); }, 800);
+  } catch(e) {
+    ta.style.borderColor = '#A32D2D';
+    setTimeout(function() { ta.style.borderColor = ''; }, 1500);
+  }
+}
+</script>
 <script>
 let chartInst = null;
 let lang = 'ru';
