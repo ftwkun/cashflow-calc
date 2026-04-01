@@ -720,8 +720,14 @@ function loadState() {
   } catch(e) { return false; }
 }
 
-document.addEventListener('input', saveState);
-document.addEventListener('change', saveState);
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'json-expenses' || e.target.id === 'json-incomes' || e.target.id === 'json-snapshots') return;
+  saveState();
+});
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'json-expenses' || e.target.id === 'json-incomes' || e.target.id === 'json-snapshots') return;
+  saveState();
+});
 
 document.getElementById('debug-today').addEventListener('change', calculate);
 
