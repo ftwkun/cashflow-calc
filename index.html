@@ -11,7 +11,38 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; padding: 1.5rem 1rem; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; padding: 1.5rem 1rem; transition: background 0.2s, color 0.2s; }
+body.dark { background: #1a1a1a; color: #e8e8e6; }
+body.dark .section { background: #262626; border-color: rgba(255,255,255,0.1); }
+body.dark .section-title { color: #666; }
+body.dark input[type=text], body.dark input[type=number], body.dark input[type=date], body.dark textarea { background: #333; color: #e8e8e6; border-color: rgba(255,255,255,0.15); }
+body.dark input:focus { border-color: rgba(255,255,255,0.4); }
+body.dark .toggle-btn { color: #aaa; border-color: rgba(255,255,255,0.2); }
+body.dark .toggle-btn:hover { background: #333; }
+body.dark .toggle-btn.active { background: #e8e8e6; color: #1a1a1a; border-color: #e8e8e6; }
+body.dark .sort-btn, body.dark .add-btn, body.dark .snap-btn { color: #aaa; border-color: rgba(255,255,255,0.2); }
+body.dark .sort-btn:hover, body.dark .add-btn:hover, body.dark .snap-btn:hover { background: #333; }
+body.dark .del-btn { color: #888; border-color: rgba(255,255,255,0.1); }
+body.dark .del-btn:hover { background: #333; }
+body.dark .calc-btn { background: #e8e8e6; color: #1a1a1a; }
+body.dark .calc-btn:hover { background: #ccc; }
+body.dark .metric { background: #222; }
+body.dark .metric-value { color: #e8e8e6; }
+body.dark .chart-wrap { background: #262626; border-color: rgba(255,255,255,0.1); }
+body.dark .legend-item { color: #aaa; }
+body.dark .freq label { color: #888; border-color: rgba(255,255,255,0.15); }
+body.dark .freq input[type=radio]:checked + label { background: #e8e8e6; color: #1a1a1a; border-color: #e8e8e6; }
+body.dark .entry-row:nth-child(odd) { background: #2a2a2a; }
+body.dark .entry-row:nth-child(even) { background: #303030; }
+body.dark .inv-row:nth-child(odd) { background: #2a2a2a; }
+body.dark .inv-row:nth-child(even) { background: #303030; }
+body.dark .rec-badge { background: #0c2a44; color: #7ab8f5; }
+body.dark .hint { color: #666; }
+body.dark .chart-note { color: #666; }
+body.dark h1 { color: #e8e8e6; }
+body.dark .debug-bar { background: #3a3000; border-color: #7a6000; color: #aaa; }
+body.dark textarea { background: #333; color: #e8e8e6; border-color: rgba(255,255,255,0.15); }
+body.dark .field-row label { color: #aaa; }
 .container { max-width: 560px; margin: 0 auto; }
 .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
 h1 { font-size: 18px; font-weight: 500; color: #1a1a1a; }
@@ -62,6 +93,17 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 .entry-row:nth-child(odd) { background: #fafaf8; }
 .entry-row:nth-child(even) { background: #f0f0ed; }
 .entry-row .freq { width: 100%; margin-top: 4px; }
+.snap-btn { background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: #666; white-space: nowrap; }
+.snap-btn:hover { background: #ebebea; }
+.inv-row { display: flex; gap: 8px; align-items: center; padding: 6px 4px; border-radius: 8px; font-size: 13px; }
+.inv-row:nth-child(odd) { background: #fafaf8; }
+.inv-row:nth-child(even) { background: #f0f0ed; }
+.inv-row input[type=date] { max-width: 130px; }
+.inv-row input[type=number] { max-width: 120px; }
+.delta-pos { color: #3B6D11; font-size: 12px; min-width: 70px; text-align: right; }
+.delta-neg { color: #A32D2D; font-size: 12px; min-width: 70px; text-align: right; }
+.delta-zero { color: #888; font-size: 12px; min-width: 70px; text-align: right; }
+.debug-bar { background: #fff3cd; border: 0.5px solid #ffc107; border-radius: 8px; padding: 8px 12px; margin-bottom: 1rem; font-size: 12px; color: #666; display: flex; gap: 10px; align-items: center; }
 </style>
 </head>
 <body>
@@ -73,6 +115,7 @@ input:focus { border-color: rgba(0,0,0,0.4); }
       <button class="toggle-btn" id="btn-en" onclick="setLang('en')">EN</button>
       <button class="toggle-btn active" id="btn-rub" onclick="setCurrency('rub')">₽</button>
       <button class="toggle-btn" id="btn-usd" onclick="setCurrency('usd')">$</button>
+      <button class="toggle-btn" id="btn-theme" onclick="toggleTheme()">☾</button>
     </div>
   </div>
 
@@ -80,7 +123,10 @@ input:focus { border-color: rgba(0,0,0,0.4); }
     <div class="section-title" style="margin-bottom:12px;" id="t-section-main">Стартовые данные</div>
     <div class="field-row">
       <label id="t-balance">Баланс сейчас, ₽</label>
-      <input type="number" id="balance" value="50000" step="0.01">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="number" id="balance" value="50000" step="0.01" style="max-width:140px;">
+        <button class="snap-btn" onclick="snapToday()" id="t-snap-btn">сегодня</button>
+      </div>
     </div>
     <div class="field-row">
       <label id="t-horizon">До какой даты</label>
@@ -138,13 +184,47 @@ input:focus { border-color: rgba(0,0,0,0.4); }
       <span class="legend-item"><span class="legend-dot" style="background:#185FA5;"></span><span id="t-leg-balance">баланс</span></span>
       <span class="legend-item"><span class="legend-dot" style="background:#A32D2D;"></span><span id="t-leg-danger">провал ниже минимума</span></span>
       <span class="legend-item"><span class="legend-dot" style="background:rgba(163,45,45,0.35); border:1px dashed #A32D2D;"></span><span id="t-leg-min">мин. остаток</span></span>
+      <span class="legend-item"><span class="legend-dot" style="background:#1D9E75;"></span><span id="t-leg-snap">инвентаризация</span></span>
     </div>
     <div style="position:relative; width:100%; height:220px;">
       <canvas id="chart"></canvas>
     </div>
   </div>
   <div class="chart-note" id="chart-note"></div>
-</div>
+
+  <div class="section" id="inv-section" style="display:none;">
+    <div class="section-header">
+      <div class="section-title" id="t-inv-title">Инвентаризации</div>
+    </div>
+    <div id="inv-list"></div>
+  </div>
+
+  <input type="date" id="debug-today" style="display:none;">
+
+  <div style="text-align:center; margin-bottom:1rem;">
+    <button class="add-btn" onclick="toggleImport()" id="import-toggle-btn">JSON импорт ▾</button>
+  </div>
+
+  <div id="import-section" style="display:none;">
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px;">JSON импорт</div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px; color:#888; margin-bottom:4px;">Траты</div>
+        <textarea id="json-expenses" rows="5" style="width:100%; font-size:12px; font-family:monospace; border:0.5px solid rgba(0,0,0,0.18); border-radius:8px; padding:8px; resize:vertical; color:#1a1a1a; background:#fff;" placeholder='[{"date":"2026-04-01","sum":"5000","label":"садик","freq":"monthly"}]'></textarea>
+        <button class="add-btn" style="margin-top:6px;" onclick="importJSON('expenses')">Перезаписать траты</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:12px; color:#888; margin-bottom:4px;">Доходы</div>
+        <textarea id="json-incomes" rows="5" style="width:100%; font-size:12px; font-family:monospace; border:0.5px solid rgba(0,0,0,0.18); border-radius:8px; padding:8px; resize:vertical; color:#1a1a1a; background:#fff;" placeholder='[{"date":"2026-04-10","sum":"80000","label":"зарплата","freq":"monthly"}]'></textarea>
+        <button class="add-btn" style="margin-top:6px;" onclick="importJSON('incomes')">Перезаписать доходы</button>
+      </div>
+      <div>
+        <div style="font-size:12px; color:#888; margin-bottom:4px;">Инвентаризации</div>
+        <textarea id="json-snapshots" rows="4" style="width:100%; font-size:12px; font-family:monospace; border:0.5px solid rgba(0,0,0,0.18); border-radius:8px; padding:8px; resize:vertical; color:#1a1a1a; background:#fff;" placeholder='[{"date":"2026-03-31","balance":42000}]'></textarea>
+        <button class="add-btn" style="margin-top:6px;" onclick="importSnapshots()">Перезаписать инвентаризации</button>
+      </div>
+    </div>
+  </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
@@ -182,7 +262,10 @@ const T = {
     freqOnce: 'раз',
     freqDaily: 'день',
     freqMonthly: 'мес',
-    freqWeekly: 'нед'
+    freqWeekly: 'нед',
+    snapBtn: 'сегодня',
+    invTitle: 'Инвентаризации',
+    legSnap: 'инвентаризация'
   },
   en: {
     title: 'Daily Limit Calculator',
@@ -213,7 +296,10 @@ const T = {
     freqOnce: 'once',
     freqDaily: 'day',
     freqMonthly: 'mo',
-    freqWeekly: 'wk'
+    freqWeekly: 'wk',
+    snapBtn: 'today',
+    invTitle: 'Snapshots',
+    legSnap: 'snapshot'
   }
 };
 
@@ -269,12 +355,38 @@ function applyLang() {
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
   document.getElementById('btn-rub').classList.toggle('active', currency === 'rub');
   document.getElementById('btn-usd').classList.toggle('active', currency === 'usd');
+  document.getElementById('t-snap-btn').textContent = t.snapBtn;
+  document.getElementById('t-inv-title').textContent = t.invTitle;
+  document.getElementById('t-leg-snap').textContent = t.legSnap;
 }
 
 function setLang(l) { lang = l; applyLang(); saveState(); }
 function setCurrency(cur) { currency = cur; applyLang(); saveState(); calculate(); }
 
-function today() { return new Date().toISOString().split('T')[0]; }
+let snapshots = []; // [{date, balance}]
+
+function getToday() {
+  const dbg = document.getElementById('debug-today').value;
+  return dbg || new Date().toISOString().split('T')[0];
+}
+
+function resetDebugToday() {
+  document.getElementById('debug-today').value = '';
+  calculate();
+}
+
+function snapToday() {
+  const date = getToday();
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const existing = snapshots.findIndex(function(s) { return s.date === date; });
+  if (existing >= 0) snapshots[existing].balance = balance;
+  else snapshots.push({ date: date, balance: balance });
+  snapshots.sort(function(a, b) { return a.date.localeCompare(b.date); });
+  saveState();
+  calculate();
+}
+
+function today() { return getToday(); }
 
 function setHorizon() {
   const d = new Date();
@@ -371,29 +483,47 @@ function calculate() {
   const days = Math.round((end - start) / 86400000);
   if (days <= 0) return;
 
+  // determine chart start: earliest snapshot or today
+  const chartStartDate = snapshots.length
+    ? snapshots.reduce(function(a, b) { return a.date < b.date ? a : b; }).date
+    : today();
+  const chartStart = new Date(chartStartDate);
+  const chartDays = Math.round((end - chartStart) / 86400000);
+  if (chartDays <= 0) return;
+
   const incomes = getRows('income');
   const expenses = getRows('expense');
-  const expandedInc = expandRows(incomes, today(), horizon);
-  const expandedExp = expandRows(expenses, today(), horizon);
+  const expandedInc = expandRows(incomes, chartStartDate, horizon);
+  const expandedExp = expandRows(expenses, chartStartDate, horizon);
   const recommended = calcRecommended(balance, minBal, days, expandedInc, expandedExp);
   document.getElementById('rec-badge').textContent = T[lang].rec + ': ' + fmt(recommended);
 
   const customVal = document.getElementById('custom-limit').value;
   const dailyLimit = customVal ? Math.max(0, parseFloat(customVal)) : recommended;
 
-  const labels = [], balances = [], dangerPoints = [];
-  let cur = balance;
+  // find starting balance: from earliest snapshot or current balance
+  const firstSnap = snapshots.length
+    ? snapshots.reduce(function(a, b) { return a.date < b.date ? a : b; })
+    : null;
+  let cur = firstSnap ? firstSnap.balance : balance;
+  let planned = firstSnap ? firstSnap.balance : balance;
 
-  for (let d = 0; d <= days; d++) {
-    const dt = new Date(start);
+  const labels = [], balances = [], dangerPoints = [], plannedBalances = [];
+
+  for (let d = 0; d <= chartDays; d++) {
+    const dt = new Date(chartStart);
     dt.setDate(dt.getDate() + d);
     const ds = dt.toISOString().split('T')[0];
     labels.push(ds.slice(5));
     if (d > 0) {
       cur -= dailyLimit;
-      expandedInc.forEach(function(r) { if (r.date === ds) cur += r.sum; });
-      expandedExp.forEach(function(r) { if (r.date === ds) cur -= r.sum; });
+      planned -= dailyLimit;
+      expandedInc.forEach(function(r) { if (r.date === ds) { cur += r.sum; planned += r.sum; } });
+      expandedExp.forEach(function(r) { if (r.date === ds) { cur -= r.sum; planned -= r.sum; } });
     }
+    plannedBalances.push(parseFloat(planned.toFixed(2)));
+    var snap = snapshots.find(function(s) { return s.date === ds && s !== firstSnap; });
+    if (snap) cur = snap.balance;
     const rounded = parseFloat(cur.toFixed(2));
     balances.push(rounded);
     dangerPoints.push(rounded < minBal ? rounded : null);
@@ -410,6 +540,13 @@ function calculate() {
   document.getElementById('m-days').textContent = days;
   document.getElementById('metrics').style.display = 'grid';
 
+  // build snapshot dataset aligned to labels array
+  const snapData = Array(balances.length).fill(null);
+  snapshots.forEach(function(s) {
+    const idx = labels.indexOf(s.date.slice(5));
+    if (idx >= 0) snapData[idx] = s.balance;
+  });
+
   if (chartInst) chartInst.destroy();
   document.getElementById('chart-wrap').style.display = 'block';
 
@@ -420,7 +557,8 @@ function calculate() {
       datasets: [
         { label: T[lang].legBalance, data: balances, borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)', borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.2 },
         { label: T[lang].legDanger, data: dangerPoints, borderColor: '#A32D2D', borderWidth: 0, pointRadius: 3, pointBackgroundColor: '#A32D2D', fill: false },
-        { label: T[lang].legMin, data: Array(balances.length).fill(minBal), borderColor: 'rgba(163,45,45,0.4)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false }
+        { label: T[lang].legMin, data: Array(balances.length).fill(minBal), borderColor: 'rgba(163,45,45,0.4)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false },
+        { label: T[lang].legSnap, data: snapData, borderColor: '#1D9E75', borderWidth: 0, pointRadius: 6, pointBackgroundColor: '#1D9E75', pointStyle: 'circle', fill: false, spanGaps: false }
       ]
     },
     options: {
@@ -453,15 +591,103 @@ function calculate() {
   if (diff > 0.005) note.textContent = t.noteAbove.replace('{n}', fmt(Math.abs(diff)));
   else if (diff < -0.005) note.textContent = t.noteBelow.replace('{n}', fmt(Math.abs(diff)));
   else note.textContent = t.noteEqual;
+
+  renderInvList(labels, plannedBalances);
+}
+
+function renderInvList(labels, balances) {
+  const inv = document.getElementById('inv-section');
+  const list = document.getElementById('inv-list');
+  if (!snapshots.length) { inv.style.display = 'none'; return; }
+  inv.style.display = 'block';
+  list.innerHTML = '';
+  snapshots.forEach(function(s, idx) {
+    const labelIdx = labels.indexOf(s.date.slice(5));
+    const planned = labelIdx >= 0 ? balances[labelIdx] : null;
+    const delta = planned !== null ? s.balance - planned : null;
+    const deltaFmt = delta !== null ? (delta >= 0 ? '+' : '') + fmt(delta) : '—';
+    const deltaClass = delta === null ? 'delta-zero' : delta > 0.005 ? 'delta-pos' : delta < -0.005 ? 'delta-neg' : 'delta-zero';
+    const row = document.createElement('div');
+    row.className = 'inv-row';
+    row.innerHTML =
+      '<input type="date" value="' + s.date + '" style="max-width:130px;" oninput="updateSnap(' + idx + ',\'date\',this.value)">' +
+      '<input type="number" value="' + s.balance + '" step="0.01" style="max-width:120px;" oninput="updateSnap(' + idx + ',\'balance\',this.value)">' +
+      '<span class="' + deltaClass + '">' + deltaFmt + '</span>' +
+      '<button class="del-btn" style="margin-left:auto;" onclick="deleteSnap(' + idx + ')">×</button>';
+    list.appendChild(row);
+  });
+}
+
+function updateSnap(idx, field, val) {
+  if (field === 'balance') snapshots[idx].balance = parseFloat(val) || 0;
+  else snapshots[idx].date = val;
+  snapshots.sort(function(a, b) { return a.date.localeCompare(b.date); });
+  saveState();
+  calculate();
+}
+
+function deleteSnap(idx) {
+  snapshots.splice(idx, 1);
+  saveState();
+  calculate();
+}
+
+function toggleImport() {
+  const s = document.getElementById('import-section');
+  const btn = document.getElementById('import-toggle-btn');
+  const visible = s.style.display !== 'none';
+  s.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? 'JSON импорт ▾' : 'JSON импорт ▴';
+}
+
+function importSnapshots() {
+  const ta = document.getElementById('json-snapshots');
+  try {
+    const rows = JSON.parse(ta.value);
+    if (!Array.isArray(rows)) throw new Error();
+    snapshots = rows.map(function(r) {
+      return { date: r.date, balance: parseFloat(r.balance) || 0 };
+    });
+    snapshots.sort(function(a, b) { return a.date.localeCompare(b.date); });
+    ta.style.borderColor = '#3B6D11';
+    setTimeout(function() { ta.style.borderColor = ''; }, 1500);
+    saveState();
+    calculate();
+  } catch(e) {
+    ta.style.borderColor = '#A32D2D';
+    setTimeout(function() { ta.style.borderColor = ''; }, 1500);
+  }
+}
+
+function importJSON(type) {
+  const ta = document.getElementById('json-' + type);
+  try {
+    const rows = JSON.parse(ta.value);
+    if (!Array.isArray(rows)) throw new Error();
+    const containerId = type;
+    const rowType = type === 'expenses' ? 'expense' : 'income';
+    document.getElementById(containerId).innerHTML = '';
+    rows.forEach(function(r) {
+      addRowWithData(containerId, rowType, r.date || '', r.sum || '', r.label || '', r.freq || 'once');
+    });
+    ta.style.borderColor = '#3B6D11';
+    setTimeout(function() { ta.style.borderColor = ''; }, 1500);
+    saveState();
+    calculate();
+  } catch(e) {
+    ta.style.borderColor = '#A32D2D';
+    setTimeout(function() { ta.style.borderColor = ''; }, 1500);
+  }
 }
 
 function saveState() {
   const state = {
-    lang: lang, currency: currency,
+    lang: lang, currency: currency, darkTheme: darkTheme,
     balance: document.getElementById('balance').value,
     horizon: document.getElementById('horizon').value,
     minbal: document.getElementById('minbal').value,
     customLimit: document.getElementById('custom-limit').value,
+    snapshots: snapshots,
     incomes: [], expenses: []
   };
   document.querySelectorAll('#incomes .entry-row').forEach(function(row) {
@@ -482,6 +708,8 @@ function loadState() {
     const state = JSON.parse(raw);
     if (state.lang) lang = state.lang;
     if (state.currency) currency = state.currency;
+    if (state.darkTheme !== undefined) darkTheme = state.darkTheme;
+    if (state.snapshots) snapshots = state.snapshots;
     document.getElementById('balance').value = state.balance || '';
     document.getElementById('horizon').value = state.horizon || '';
     document.getElementById('minbal').value = state.minbal || '';
@@ -495,6 +723,22 @@ function loadState() {
 document.addEventListener('input', saveState);
 document.addEventListener('change', saveState);
 
+document.getElementById('debug-today').addEventListener('change', calculate);
+
+let darkTheme = false;
+
+function toggleTheme() {
+  darkTheme = !darkTheme;
+  applyTheme();
+  saveState();
+}
+
+function applyTheme() {
+  document.body.classList.toggle('dark', darkTheme);
+  document.getElementById('btn-theme').textContent = darkTheme ? '☀' : '☾';
+  document.getElementById('btn-theme').classList.toggle('active', darkTheme);
+}
+
 const loaded = loadState();
 if (!loaded) {
   setHorizon();
@@ -502,6 +746,7 @@ if (!loaded) {
   addRow('expenses', 'expense');
 }
 applyLang();
+applyTheme();
 calculate();
 </script>
 <script>
