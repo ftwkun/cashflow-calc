@@ -50,7 +50,7 @@ h1 { font-size: 18px; font-weight: 500; color: #1a1a1a; }
 .toggle-btn { background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: #666; }
 .toggle-btn:hover { background: #ebebea; }
 .toggle-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-.section { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.section { background: #fff; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .section-title { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
 .sort-btn { background: none; border: 0.5px solid rgba(0,0,0,0.2); border-radius: 8px; padding: 3px 10px; font-size: 12px; cursor: pointer; color: #666; }
@@ -70,7 +70,7 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 .rec-badge { font-size: 12px; color: #185FA5; background: #E6F1FB; border-radius: 8px; padding: 3px 10px; white-space: nowrap; }
 .hint { font-size: 12px; color: #aaa; margin-top: 6px; }
 .field-row { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-.field-row label { font-size: 13px; color: #666; white-space: nowrap; min-width: 130px; }
+.field-row label { font-size: 13px; color: #666; white-space: nowrap; }
 .field-row input { max-width: 160px; }
 .calc-btn { width: 100%; padding: 11px; background: #1a1a1a; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; cursor: pointer; color: #fff; margin-bottom: 1rem; }
 .calc-btn:hover { background: #333; }
@@ -162,13 +162,13 @@ body.dark #cal-tooltip .tt-limit { border-color: rgba(255,255,255,0.08); color: 
       </div>
     </div>
     <div class="field-row">
-      <label id="t-horizon">До какой даты</label>
-      <div style="display:flex; gap:6px; align-items:center;">
-        <input type="date" id="horizon" style="max-width:140px;">
-        <button class="snap-btn" onclick="setHorizonQuick(1,'month')" id="btn-q1m">1м</button>
-        <button class="snap-btn" onclick="setHorizonQuick(3,'month')" id="btn-q3m">3м</button>
-        <button class="snap-btn" onclick="setHorizonQuick(6,'month')" id="btn-q6m">6м</button>
-        <button class="snap-btn" onclick="setHorizonQuick(1,'year')" id="btn-q1y">1г</button>
+      <label id="t-horizon">До</label>
+      <div style="display:flex; gap:4px; align-items:center; flex:1;">
+        <input type="date" id="horizon" style="max-width:125px; min-width:0; flex:none;">
+        <button class="snap-btn" onclick="setHorizonQuick(1,'month')" id="btn-q1m" style="padding:3px 6px; flex-shrink:0;">1м</button>
+        <button class="snap-btn" onclick="setHorizonQuick(3,'month')" id="btn-q3m" style="padding:3px 6px; flex-shrink:0;">3м</button>
+        <button class="snap-btn" onclick="setHorizonQuick(6,'month')" id="btn-q6m" style="padding:3px 6px; flex-shrink:0;">6м</button>
+        <button class="snap-btn" onclick="setHorizonQuick(1,'year')" id="btn-q1y" style="padding:3px 6px; flex-shrink:0;">1г</button>
       </div>
     </div>
     <div class="field-row">
@@ -189,10 +189,10 @@ body.dark #cal-tooltip .tt-limit { border-color: rgba(255,255,255,0.08); color: 
 
   <div class="section">
     <div class="section-header" onclick="toggleSection('incomes','t-sort-btn-inc','t-add-inc')" style="cursor:pointer;">
-      <div class="section-title" id="t-incomes">Поступления <span id="inc-arrow">▾</span></div>
+      <div class="section-title" id="t-incomes">Поступления <span id="inc-arrow">▸</span></div>
       <button class="sort-btn" onclick="event.stopPropagation(); sortContainer('incomes','income')" id="t-sort-btn-inc">по дате ↑</button>
     </div>
-    <div id="incomes-body">
+    <div id="incomes-body" style="display:none;">
       <div id="incomes"></div>
       <button class="add-btn" onclick="addRow('incomes','income')" id="t-add-inc">+ добавить</button>
     </div>
@@ -200,10 +200,10 @@ body.dark #cal-tooltip .tt-limit { border-color: rgba(255,255,255,0.08); color: 
 
   <div class="section">
     <div class="section-header" onclick="toggleSection('expenses','t-sort-btn-exp','t-add-exp')" style="cursor:pointer;">
-      <div class="section-title" id="t-expenses">Крупные траты <span id="exp-arrow">▾</span></div>
+      <div class="section-title" id="t-expenses">Крупные траты <span id="exp-arrow">▸</span></div>
       <button class="sort-btn" onclick="event.stopPropagation(); sortContainer('expenses','expense')" id="t-sort-btn-exp">по дате ↑</button>
     </div>
-    <div id="expenses-body">
+    <div id="expenses-body" style="display:none;">
       <div id="expenses"></div>
       <button class="add-btn" onclick="addRow('expenses','expense')" id="t-add-exp">+ добавить</button>
     </div>
@@ -514,7 +514,7 @@ const T = {
     title: 'Калькулятор дневного лимита',
     sectionMain: 'Стартовые данные',
     balance: 'Баланс сейчас',
-    horizon: 'До какой даты',
+    horizon: 'До',
     minbal: 'Мин. остаток',
     limitLabel: 'Дневной лимит',
     hint: 'оставьте пустым — лимит посчитается автоматически',
@@ -550,7 +550,7 @@ const T = {
     title: 'Daily Limit Calculator',
     sectionMain: 'Starting data',
     balance: 'Current balance',
-    horizon: 'Until date',
+    horizon: 'Until',
     minbal: 'Min. balance',
     limitLabel: 'Daily limit',
     hint: 'leave empty — limit will be calculated automatically',
@@ -1080,6 +1080,8 @@ function renderCalendar() {
   const DOW_EN = ['Su','Mo','Tu','We','Th','Fr','Sa'];
   const MONTH_RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
   const MONTH_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const MONTH_RU_FULL = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const MONTH_EN_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const isRu = lang === 'ru';
 
   const sym = C[currency].sym;
@@ -1184,7 +1186,8 @@ function renderCalendar() {
     });
 
     // tooltip on every row
-    tr.addEventListener('mouseenter', function(e) { showCalTooltip(e, expDetail[ds] || [], incDetail[ds] || [], dailyLimit, isRu); });
+    const tooltipDateStr = dayNum + ' ' + (isRu ? MONTH_RU_FULL : MONTH_EN_FULL)[month] + ' ' + dt.getFullYear();
+    tr.addEventListener('mouseenter', function(e) { showCalTooltip(e, expDetail[ds] || [], incDetail[ds] || [], dailyLimit, isRu, tooltipDateStr); });
     tr.addEventListener('mousemove', function(e) { moveCalTooltip(e); });
     tr.addEventListener('mouseleave', hideCalTooltip);
     tbody.appendChild(tr);
@@ -1235,12 +1238,16 @@ function renderCalendar() {
   table.querySelectorAll('td.bal-neg').forEach(function(td) { td.style.color = '#A32D2D'; });
 }
 
-function showCalTooltip(e, expItems, incItems, dailyLimit, isRu) {
+function showCalTooltip(e, expItems, incItems, dailyLimit, isRu, dateStr) {
   const tt = document.getElementById('cal-tooltip');
   const sym = C[currency].sym;
   function fmtT(n) { return Math.round(n).toLocaleString(C[currency].loc) + ' ' + sym; }
 
-  let html = '<div class="tt-row">';
+  let html = '';
+  if (dateStr) {
+    html += '<div style="font-size:12px; font-weight:500; color:var(--color-text-secondary,#888); margin-bottom:8px; padding-bottom:6px; border-bottom:0.5px solid rgba(128,128,128,0.2);">' + dateStr + '</div>';
+  }
+  html += '<div class="tt-row">';
 
   // expenses column
   html += '<div class="tt-col">';
