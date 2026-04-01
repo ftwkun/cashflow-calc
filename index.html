@@ -104,6 +104,39 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 .delta-neg { color: #A32D2D; font-size: 12px; min-width: 70px; text-align: right; }
 .delta-zero { color: #888; font-size: 12px; min-width: 70px; text-align: right; }
 .debug-bar { background: #fff3cd; border: 0.5px solid #ffc107; border-radius: 8px; padding: 8px 12px; margin-bottom: 1rem; font-size: 12px; color: #666; display: flex; gap: 10px; align-items: center; }
+body.dark .debug-bar { background: #3a3000; border-color: #7a6000; color: #aaa; }
+#cal-table th { background: #f5f5f3; color: #888; font-weight: 500; padding: 6px 8px; text-align: right; border-bottom: 0.5px solid rgba(0,0,0,0.1); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+#cal-table th:first-child { text-align: left; }
+#cal-table td { padding: 5px 8px; text-align: right; border-bottom: 0.5px solid rgba(0,0,0,0.05); white-space: nowrap; color: #1a1a1a; }
+#cal-table td:first-child { text-align: left; color: #666; }
+#cal-table tr.weekend td { background: #fafaf0; }
+#cal-table tr.today-row td { background: #E6F1FB; font-weight: 500; }
+#cal-table tr.month-total td { background: #f0f0ed; font-weight: 500; color: #1a1a1a; border-top: 0.5px solid rgba(0,0,0,0.15); border-bottom: 0.5px solid rgba(0,0,0,0.15); }
+#cal-table tr.month-total td:first-child { color: #888; }
+#cal-table td.income { color: #3B6D11; }
+#cal-table td.expense { color: #A32D2D; }
+#cal-table td.bal-neg { color: #A32D2D; }
+#cal-table tr.month-total td.income { color: #3B6D11; }
+#cal-table tr.month-total td.expense { color: #A32D2D; }
+#cal-table tr.month-total td.bal-neg { color: #A32D2D; }
+body.dark #cal-table th { background: #222; color: #666; border-color: rgba(255,255,255,0.1); }
+body.dark #cal-table td { color: #e8e8e6; border-color: rgba(255,255,255,0.05); }
+body.dark #cal-table td:first-child { color: #888; }
+body.dark #cal-table tr.weekend td { background: #252510; }
+body.dark #cal-table tr.today-row td { background: #0c2a44; }
+body.dark #cal-table tr.month-total td { background: #2a2a2a; color: #e8e8e6; }
+#cal-tooltip { position: fixed; display: none; background: var(--bg, #fff); border: 0.5px solid rgba(0,0,0,0.15); border-radius: 10px; padding: 10px 14px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 9999; pointer-events: none; min-width: 160px; max-width: 280px; }
+#cal-tooltip .tt-row { display: flex; gap: 16px; }
+#cal-tooltip .tt-col { flex: 1; }
+#cal-tooltip .tt-head { font-weight: 500; color: #888; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+#cal-tooltip .tt-item { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+#cal-tooltip .tt-name { color: #1a1a1a; }
+#cal-tooltip .tt-sum-exp { color: #A32D2D; white-space: nowrap; flex-shrink: 0; }
+#cal-tooltip .tt-sum-inc { color: #3B6D11; white-space: nowrap; flex-shrink: 0; }
+#cal-tooltip .tt-limit { color: #888; font-size: 11px; margin-top: 4px; padding-top: 4px; border-top: 0.5px solid rgba(0,0,0,0.08); }
+body.dark #cal-tooltip { background: #262626; border-color: rgba(255,255,255,0.1); }
+body.dark #cal-tooltip .tt-name { color: #e8e8e6; }
+body.dark #cal-tooltip .tt-limit { border-color: rgba(255,255,255,0.08); color: #666; }
 </style>
 </head>
 <body>
@@ -130,7 +163,13 @@ input:focus { border-color: rgba(0,0,0,0.4); }
     </div>
     <div class="field-row">
       <label id="t-horizon">До какой даты</label>
-      <input type="date" id="horizon">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input type="date" id="horizon" style="max-width:140px;">
+        <button class="snap-btn" onclick="setHorizonQuick(1,'month')" id="btn-q1m">1м</button>
+        <button class="snap-btn" onclick="setHorizonQuick(3,'month')" id="btn-q3m">3м</button>
+        <button class="snap-btn" onclick="setHorizonQuick(6,'month')" id="btn-q6m">6м</button>
+        <button class="snap-btn" onclick="setHorizonQuick(1,'year')" id="btn-q1y">1г</button>
+      </div>
     </div>
     <div class="field-row">
       <label id="t-minbal">Мин. остаток, ₽</label>
@@ -142,24 +181,32 @@ input:focus { border-color: rgba(0,0,0,0.4); }
       <span class="rec-badge" id="rec-badge">рекомендован: —</span>
     </div>
     <div class="hint" id="t-hint">оставьте пустым — лимит посчитается автоматически</div>
+    <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+      <button class="snap-btn" onclick="suggestLimit('noneg')" id="btn-noneg">без минусов</button>
+      <button class="snap-btn" onclick="suggestLimit('abovemin')" id="btn-abovemin">выше минимума</button>
+    </div>
   </div>
 
   <div class="section">
-    <div class="section-header">
-      <div class="section-title" id="t-incomes">Поступления</div>
-      <button class="sort-btn" onclick="sortContainer('incomes','income')" id="t-sort-btn-inc">по дате ↑</button>
+    <div class="section-header" onclick="toggleSection('incomes','t-sort-btn-inc','t-add-inc')" style="cursor:pointer;">
+      <div class="section-title" id="t-incomes">Поступления <span id="inc-arrow">▾</span></div>
+      <button class="sort-btn" onclick="event.stopPropagation(); sortContainer('incomes','income')" id="t-sort-btn-inc">по дате ↑</button>
     </div>
-    <div id="incomes"></div>
-    <button class="add-btn" onclick="addRow('incomes','income')" id="t-add-inc">+ добавить</button>
+    <div id="incomes-body">
+      <div id="incomes"></div>
+      <button class="add-btn" onclick="addRow('incomes','income')" id="t-add-inc">+ добавить</button>
+    </div>
   </div>
 
   <div class="section">
-    <div class="section-header">
-      <div class="section-title" id="t-expenses">Крупные траты</div>
-      <button class="sort-btn" onclick="sortContainer('expenses','expense')" id="t-sort-btn-exp">по дате ↑</button>
+    <div class="section-header" onclick="toggleSection('expenses','t-sort-btn-exp','t-add-exp')" style="cursor:pointer;">
+      <div class="section-title" id="t-expenses">Крупные траты <span id="exp-arrow">▾</span></div>
+      <button class="sort-btn" onclick="event.stopPropagation(); sortContainer('expenses','expense')" id="t-sort-btn-exp">по дате ↑</button>
     </div>
-    <div id="expenses"></div>
-    <button class="add-btn" onclick="addRow('expenses','expense')" id="t-add-exp">+ добавить</button>
+    <div id="expenses-body">
+      <div id="expenses"></div>
+      <button class="add-btn" onclick="addRow('expenses','expense')" id="t-add-exp">+ добавить</button>
+    </div>
   </div>
 
   <button class="calc-btn" onclick="calculate()" id="t-calc-btn">Посчитать</button>
@@ -243,6 +290,19 @@ input:focus { border-color: rgba(0,0,0,0.4); }
     </div>
   </div>
 
+  <div style="text-align:center; margin-bottom:1rem;">
+    <button class="add-btn" onclick="toggleCalendar()" id="cal-toggle-btn">Календарь ▾</button>
+  </div>
+  <div id="cal-section" style="display:none; margin-bottom:2rem;">
+    <div class="section" style="padding:0; overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table id="cal-table" style="width:100%; border-collapse:collapse; font-size:12px;"></table>
+      </div>
+    </div>
+  </div>
+
+<div id="cal-tooltip"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -259,6 +319,7 @@ function showQR() {
 }
 
 // ── Binary pack/unpack ──────────────────────────────────────────────
+// Format v3: int48 sums, freq(2b)+lablen(6b) packed into 1 byte
 // Epoch: 2020-01-01
 const EPOCH = new Date('2020-01-01').getTime();
 const MS_DAY = 86400000;
@@ -267,6 +328,26 @@ const FREQ_INV = ['once', 'daily', 'weekly', 'monthly'];
 
 function dateToDay(s) { return s ? Math.round((new Date(s).getTime() - EPOCH) / MS_DAY) : 0; }
 function dayToDate(d) { return new Date(EPOCH + d * MS_DAY).toISOString().split('T')[0]; }
+
+// int48 big-endian write/read (±140 трлн копеек = ±1.4 трлн руб)
+function setInt48(dv, pos, val) {
+  // val in kopecks (integer)
+  const hi = Math.floor(val / 0x100000000);
+  const lo = val - hi * 0x100000000;
+  dv.setInt16(pos, hi, false);
+  dv.setUint32(pos + 2, lo >>> 0, false);
+}
+function getInt48(dv, pos) {
+  const hi = dv.getInt16(pos, false);
+  const lo = dv.getUint32(pos + 2, false);
+  return hi * 0x100000000 + lo;
+}
+
+function labelBytes(s) {
+  const enc = new TextEncoder().encode((s || '').slice(0, 31));
+  // ensure max 63 bytes (6 bits) after UTF-8 encoding
+  return enc.slice(0, 63);
+}
 
 function packState() {
   const raw = localStorage.getItem('cashflow_state');
@@ -277,65 +358,54 @@ function packState() {
   const exp = st.expenses || [];
   const snaps = st.snapshots || [];
 
-  // estimate size: header(4) + horizon(2) + balance(4) + minbal(4) + customlimit(4)
-  // + 1 count each + per row: 2+4+1+1+label
-  // max label 31 chars * 3 bytes UTF8 = 93, but we store as UTF8 truncated
-  const labelBytes = function(s) {
-    const b = new TextEncoder().encode((s||'').slice(0,31));
-    return b;
-  };
-
-  const rows = function(arr) {
-    let n = 1; // count byte
-    arr.forEach(function(r) {
-      const lb = labelBytes(r.label || r.note || '');
-      n += 2 + 4 + 1 + 1 + lb.length; // date(2)+sum(4)+freq(1)+lablen(1)+lab
-    });
+  // size: header(4) + horizon(2) + balance(6) + minbal(6) + customlimit(6)
+  // per row: date(2) + sum(6) + freqlab(1) + label(N)
+  // per snap: date(2) + balance(6)
+  const rowsSize = function(arr) {
+    let n = 1;
+    arr.forEach(function(r) { n += 2 + 6 + 1 + labelBytes(r.label || '').length; });
     return n;
   };
-  const snapSize = 1 + snaps.length * 6; // count + date(2)+bal(4)
 
-  const totalSize = 4 + 2 + 4 + 4 + 4 + rows(inc) + rows(exp) + snapSize;
+  const totalSize = 4 + 2 + 6 + 6 + 6 + rowsSize(inc) + rowsSize(exp) + 1 + snaps.length * 8;
   const buf = new ArrayBuffer(totalSize);
   const dv = new DataView(buf);
   let pos = 0;
 
-  // header byte: bits [lang|currency|dark|0|0|0|0|0]
   const flags = ((st.lang === 'en' ? 1 : 0) << 7) |
                 ((st.currency === 'usd' ? 1 : 0) << 6) |
                 ((st.darkTheme ? 1 : 0) << 5);
   dv.setUint8(pos++, flags);
-  dv.setUint8(pos++, 0x43); // magic 'C'
-  dv.setUint8(pos++, 0x46); // magic 'F'
-  dv.setUint8(pos++, 0x02); // version 2
+  dv.setUint8(pos++, 0x43); // 'C'
+  dv.setUint8(pos++, 0x46); // 'F'
+  dv.setUint8(pos++, 0x03); // version 3
 
   dv.setInt16(pos, dateToDay(st.horizon), false); pos += 2;
-  dv.setInt32(pos, Math.round((parseFloat(st.balance) || 0) * 100), false); pos += 4;
-  dv.setInt32(pos, Math.round((parseFloat(st.minbal) || 0) * 100), false); pos += 4;
-  dv.setInt32(pos, Math.round((parseFloat(st.customLimit) || 0) * 100), false); pos += 4;
+  setInt48(dv, pos, Math.round((parseFloat(st.balance) || 0) * 100)); pos += 6;
+  setInt48(dv, pos, Math.round((parseFloat(st.minbal) || 0) * 100)); pos += 6;
+  setInt48(dv, pos, Math.round((parseFloat(st.customLimit) || 0) * 100)); pos += 6;
 
   function writeRows(arr) {
     dv.setUint8(pos++, arr.length);
     arr.forEach(function(r) {
       const lb = labelBytes(r.label || '');
+      const freqIdx = FREQ_MAP[r.freq] || 0;
       dv.setInt16(pos, dateToDay(r.date), false); pos += 2;
-      dv.setInt32(pos, Math.round((parseFloat(r.sum) || 0) * 100), false); pos += 4;
-      dv.setUint8(pos++, FREQ_MAP[r.freq] || 0);
-      dv.setUint8(pos++, lb.length);
+      setInt48(dv, pos, Math.round((parseFloat(r.sum) || 0) * 100)); pos += 6;
+      // pack: [freq:2 bits][lablen:6 bits]
+      dv.setUint8(pos++, (freqIdx << 6) | lb.length);
       lb.forEach(function(b) { dv.setUint8(pos++, b); });
     });
   }
   writeRows(inc);
   writeRows(exp);
 
-  // snapshots
   dv.setUint8(pos++, snaps.length);
   snaps.forEach(function(s) {
     dv.setInt16(pos, dateToDay(s.date), false); pos += 2;
-    dv.setInt32(pos, Math.round((s.balance || 0) * 100), false); pos += 4;
+    setInt48(dv, pos, Math.round((s.balance || 0) * 100)); pos += 6;
   });
 
-  // base64url encode
   const bytes = new Uint8Array(buf, 0, pos);
   let bin = '';
   bytes.forEach(function(b) { bin += String.fromCharCode(b); });
@@ -360,30 +430,24 @@ function unpackState(b64url) {
     lang: (flags >> 7) & 1 ? 'en' : 'ru',
     currency: (flags >> 6) & 1 ? 'usd' : 'rub',
     darkTheme: !!((flags >> 5) & 1),
-    horizon: dayToDate(dv.getInt16(pos, false)), pos: (pos += 2, pos),
-    balance: String(dv.getInt32(pos, false) / 100), pos: (pos += 4, pos),
-    minbal: String(dv.getInt32(pos, false) / 100), pos: (pos += 4, pos),
-    customLimit: String(dv.getInt32(pos, false) / 100), pos: (pos += 4, pos),
     incomes: [], expenses: [], snapshots: []
   };
-  // fix: pos was overwritten by destructuring trick, read linearly
-  pos = 4 + 2 + 4 + 4 + 4;
-  st.horizon = dayToDate(dv.getInt16(4, false));
-  st.balance = String(dv.getInt32(6, false) / 100);
-  st.minbal = String(dv.getInt32(10, false) / 100);
-  st.customLimit = String(dv.getInt32(14, false) / 100);
-  pos = 18;
+
+  st.horizon = dayToDate(dv.getInt16(pos, false)); pos += 2;
+  st.balance = String(getInt48(dv, pos) / 100); pos += 6;
+  st.minbal = String(getInt48(dv, pos) / 100); pos += 6;
+  st.customLimit = String(getInt48(dv, pos) / 100); pos += 6;
 
   function readRows() {
     const count = dv.getUint8(pos++);
     const arr = [];
     for (let i = 0; i < count; i++) {
       const date = dayToDate(dv.getInt16(pos, false)); pos += 2;
-      const sum = String(dv.getInt32(pos, false) / 100); pos += 4;
-      const freq = FREQ_INV[dv.getUint8(pos++)] || 'once';
-      const llen = dv.getUint8(pos++);
-      const lb = bytes.slice(pos, pos + llen); pos += llen;
-      const label = new TextDecoder().decode(lb);
+      const sum = String(getInt48(dv, pos) / 100); pos += 6;
+      const fl = dv.getUint8(pos++);
+      const freq = FREQ_INV[(fl >> 6) & 0x3] || 'once';
+      const llen = fl & 0x3F;
+      const label = new TextDecoder().decode(bytes.slice(pos, pos + llen)); pos += llen;
       arr.push({ date, sum, label, freq });
     }
     return arr;
@@ -394,7 +458,7 @@ function unpackState(b64url) {
   const snapCount = dv.getUint8(pos++);
   for (let i = 0; i < snapCount; i++) {
     const date = dayToDate(dv.getInt16(pos, false)); pos += 2;
-    const balance = dv.getInt32(pos, false) / 100; pos += 4;
+    const balance = getInt48(dv, pos) / 100; pos += 6;
     st.snapshots.push({ date, balance });
   }
 
@@ -478,7 +542,9 @@ const T = {
     freqWeekly: 'нед',
     snapBtn: 'сегодня',
     invTitle: 'Инвентаризации',
-    legSnap: 'инвентаризация'
+    legSnap: 'инвентаризация',
+    q1m: '1м', q3m: '3м', q6m: '6м', q1y: '1г',
+    btnNoNeg: 'без минусов', btnAboveMin: 'выше минимума'
   },
   en: {
     title: 'Daily Limit Calculator',
@@ -512,7 +578,9 @@ const T = {
     freqWeekly: 'wk',
     snapBtn: 'today',
     invTitle: 'Snapshots',
-    legSnap: 'snapshot'
+    legSnap: 'snapshot',
+    q1m: '1mo', q3m: '3mo', q6m: '6mo', q1y: '1yr',
+    btnNoNeg: 'no negatives', btnAboveMin: 'above minimum'
   }
 };
 
@@ -537,8 +605,8 @@ function applyLang() {
   document.getElementById('t-minbal').textContent = t.minbal + ', ' + c.sym;
   document.getElementById('t-limit-label').textContent = t.limitLabel + ', ' + c.sym;
   document.getElementById('t-hint').textContent = t.hint;
-  document.getElementById('t-incomes').textContent = t.incomes;
-  document.getElementById('t-expenses').textContent = t.expenses;
+  document.getElementById('t-incomes').innerHTML = t.incomes + ' <span id="inc-arrow">' + (document.getElementById('inc-arrow') ? document.getElementById('inc-arrow').textContent : '▾') + '</span>';
+  document.getElementById('t-expenses').innerHTML = t.expenses + ' <span id="exp-arrow">' + (document.getElementById('exp-arrow') ? document.getElementById('exp-arrow').textContent : '▾') + '</span>';
   document.getElementById('t-sort-btn-inc').textContent = t.sortBtn;
   document.getElementById('t-sort-btn-exp').textContent = t.sortBtn;
   document.getElementById('t-add-inc').textContent = t.addBtn;
@@ -571,6 +639,12 @@ function applyLang() {
   document.getElementById('t-snap-btn').textContent = t.snapBtn;
   document.getElementById('t-inv-title').textContent = t.invTitle;
   document.getElementById('t-leg-snap').textContent = t.legSnap;
+  document.getElementById('btn-q1m').textContent = t.q1m;
+  document.getElementById('btn-q3m').textContent = t.q3m;
+  document.getElementById('btn-q6m').textContent = t.q6m;
+  document.getElementById('btn-q1y').textContent = t.q1y;
+  document.getElementById('btn-noneg').textContent = t.btnNoNeg;
+  document.getElementById('btn-abovemin').textContent = t.btnAboveMin;
 }
 
 function setLang(l) { lang = l; applyLang(); saveState(); }
@@ -601,6 +675,74 @@ function snapToday() {
 
 function today() { return getToday(); }
 
+function suggestLimit(mode) {
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const horizon = document.getElementById('horizon').value;
+  const minBal = parseFloat(document.getElementById('minbal').value) || 0;
+  if (!horizon) return;
+
+  const start = new Date(today());
+  const end = new Date(horizon);
+  const days = Math.round((end - start) / 86400000);
+  if (days <= 0) return;
+
+  const incomes = getRows('income');
+  const expenses = getRows('expense');
+  const expandedInc = expandRows(incomes, today(), horizon);
+  const expandedExp = expandRows(expenses, today(), horizon);
+  const threshold = mode === 'noneg' ? 0 : minBal;
+
+  // simulate balance with given daily limit, return minimum balance across all days
+  function minBalanceWith(limit) {
+    let cur = balance;
+    const firstSnap = snapshots.length ? snapshots.reduce(function(a,b){return a.date<b.date?a:b;}) : null;
+    if (firstSnap && firstSnap.date <= today()) cur = firstSnap.balance;
+    let minSeen = cur;
+    for (let d = 0; d <= days; d++) {
+      const dt = new Date(start);
+      dt.setDate(dt.getDate() + d);
+      const ds = dt.toISOString().split('T')[0];
+      cur -= limit;
+      expandedInc.forEach(function(r) { if (r.date === ds) cur += r.sum; });
+      expandedExp.forEach(function(r) { if (r.date === ds) cur -= r.sum; });
+      const snap = snapshots.find(function(s) { return s.date === ds; });
+      if (snap) cur = snap.balance;
+      if (cur < minSeen) minSeen = cur;
+    }
+    return minSeen;
+  }
+
+  // binary search: find max limit where min balance >= threshold
+  let lo = 0, hi = (balance + expandedInc.reduce(function(s,r){return s+r.sum;},0)) / days;
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    if (minBalanceWith(mid) >= threshold) lo = mid;
+    else hi = mid;
+  }
+
+  const suggested = Math.floor(lo * 100) / 100;
+  document.getElementById('custom-limit').value = suggested.toFixed(2);
+  saveState();
+  calculate();
+}
+
+function toggleSection(id, sortBtnId, addBtnId) {
+  const body = document.getElementById(id + '-body');
+  const arrow = document.getElementById(id === 'incomes' ? 'inc-arrow' : 'exp-arrow');
+  const collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? 'block' : 'none';
+  arrow.textContent = collapsed ? '▾' : '▸';
+}
+
+function setHorizonQuick(n, unit) {
+  const d = new Date(today());
+  if (unit === 'month') d.setMonth(d.getMonth() + n);
+  else d.setFullYear(d.getFullYear() + n);
+  document.getElementById('horizon').value = d.toISOString().split('T')[0];
+  saveState();
+  calculate();
+}
+
 function setHorizon() {
   const d = new Date();
   d.setMonth(d.getMonth() + 2);
@@ -618,9 +760,38 @@ function sortContainer(containerId, type) {
   rows.forEach(function(r) { c.appendChild(r); });
 }
 
-function addRow(containerId, type) { addRowWithData(containerId, type, today(), '', '', 'once'); }
+function addRow(containerId, type) { addRowWithData(containerId, type, today(), '', '', 'once', false); }
 
-function addRowWithData(containerId, type, date, sum, label, freq) {
+// Нерабочие дни РФ 2026 (праздники + переносы по Постановлению №1466)
+const RU_HOLIDAYS_2026 = new Set([
+  '2026-01-01','2026-01-02','2026-01-03','2026-01-04','2026-01-05',
+  '2026-01-06','2026-01-07','2026-01-08','2026-01-09','2026-01-10',
+  '2026-01-11', // новогодние + рождество + перенос 9 янв
+  '2026-02-21','2026-02-22','2026-02-23', // 23 февраля
+  '2026-03-07','2026-03-08','2026-03-09', // 8 марта
+  '2026-04-30','2026-05-01','2026-05-02','2026-05-03', // 1 мая
+  '2026-05-09','2026-05-10','2026-05-11', // 9 мая
+  '2026-06-12','2026-06-13','2026-06-14', // 12 июня
+  '2026-11-04', // 4 ноября
+  '2026-12-31'  // перенос с 4 янв
+]);
+
+function isNonWorkday(dateStr) {
+  const dt = new Date(dateStr);
+  const dow = dt.getDay();
+  return dow === 0 || dow === 6 || RU_HOLIDAYS_2026.has(dateStr);
+}
+
+function prevWorkday(dateStr) {
+  const dt = new Date(dateStr);
+  dt.setDate(dt.getDate() - 1);
+  while (isNonWorkday(dt.toISOString().split('T')[0])) {
+    dt.setDate(dt.getDate() - 1);
+  }
+  return dt.toISOString().split('T')[0];
+}
+
+function addRowWithData(containerId, type, date, sum, label, freq, workday) {
   const t = T[lang];
   const c = C[currency];
   const el = document.getElementById(containerId);
@@ -628,12 +799,17 @@ function addRowWithData(containerId, type, date, sum, label, freq) {
   div.className = 'row entry-row';
   const uid = Math.random().toString(36).slice(2, 8);
   const f = freq || 'once';
+  const wd = workday ? ' checked' : '';
+  const wdHtml = (lang === 'ru' && type === 'income')
+    ? '<label title="зачисление только в рабочие дни" style="display:flex;align-items:center;gap:3px;font-size:11px;color:#888;cursor:pointer;white-space:nowrap;"><input type="checkbox" class="' + type + '-wd"' + wd + ' style="width:auto;margin:0;"> рд</label>'
+    : '';
   div.innerHTML =
     '<input type="date" class="' + type + '-date" value="' + (date || today()) + '" style="max-width:130px;">' +
     '<input type="number" class="' + type + '-sum" placeholder="' + t.placeholderSum + ' ' + c.sym + '" style="max-width:100px;" value="' + (sum || '') + '" step="0.01">' +
     '<button class="del-btn" onclick="this.parentElement.remove(); saveState()">×</button>' +
     '<input type="text" class="' + type + '-label" placeholder="' + t.placeholderName + '" value="' + (label || '') + '" style="min-width:0;">' +
     '<div class="freq">' +
+      wdHtml +
       '<input type="radio" name="freq-' + uid + '" id="fo-' + uid + '" class="' + type + '-freq" value="once"' + (f === 'once' ? ' checked' : '') + '><label for="fo-' + uid + '">' + t.freqOnce + '</label>' +
       '<input type="radio" name="freq-' + uid + '" id="fd-' + uid + '" class="' + type + '-freq" value="daily"' + (f === 'daily' ? ' checked' : '') + '><label for="fd-' + uid + '">' + t.freqDaily + '</label>' +
       '<input type="radio" name="freq-' + uid + '" id="fm-' + uid + '" class="' + type + '-freq" value="monthly"' + (f === 'monthly' ? ' checked' : '') + '><label for="fm-' + uid + '">' + t.freqMonthly + '</label>' +
@@ -650,9 +826,10 @@ function getRows(type) {
     const sumEl = row.querySelector('.' + type + '-sum');
     const labelEl = row.querySelector('.' + type + '-label');
     const freqEl = row.querySelector('.' + type + '-freq:checked');
+    const wdEl = row.querySelector('.' + type + '-wd');
     const s = parseFloat(sumEl.value);
     if (dateEl.value && s > 0) {
-      result.push({ date: dateEl.value, sum: s, label: labelEl.value || '', freq: freqEl ? freqEl.value : 'once' });
+      result.push({ date: dateEl.value, sum: s, label: labelEl.value || '', freq: freqEl ? freqEl.value : 'once', workday: wdEl ? wdEl.checked : false });
     }
   });
   return result;
@@ -661,14 +838,18 @@ function getRows(type) {
 function expandRows(rows, startDate, endDate) {
   const result = [];
   rows.forEach(function(r) {
+    function shiftDate(ds) {
+      return (r.workday && lang === 'ru' && isNonWorkday(ds)) ? prevWorkday(ds) : ds;
+    }
     if (r.freq === 'once') {
-      result.push({ date: r.date, sum: r.sum });
+      result.push({ date: shiftDate(r.date), sum: r.sum, label: r.label });
     } else {
       const dt = new Date(r.date);
       const end = new Date(endDate);
       while (dt <= end) {
+        const ds = dt.toISOString().split('T')[0];
         if (dt >= new Date(startDate)) {
-          result.push({ date: dt.toISOString().split('T')[0], sum: r.sum });
+          result.push({ date: shiftDate(ds), sum: r.sum, label: r.label });
         }
         if (r.freq === 'monthly') dt.setMonth(dt.getMonth() + 1);
         else if (r.freq === 'weekly') dt.setDate(dt.getDate() + 7);
@@ -806,6 +987,7 @@ function calculate() {
   else note.textContent = t.noteEqual;
 
   renderInvList(labels, plannedBalances);
+  if (document.getElementById('cal-section').style.display !== 'none') renderCalendar();
 }
 
 function renderInvList(labels, balances) {
@@ -851,6 +1033,253 @@ function toggleImport() {
   const visible = s.style.display !== 'none';
   s.style.display = visible ? 'none' : 'block';
   btn.textContent = visible ? 'JSON импорт ▾' : 'JSON импорт ▴';
+}
+
+function toggleCalendar() {
+  const s = document.getElementById('cal-section');
+  const btn = document.getElementById('cal-toggle-btn');
+  const visible = s.style.display !== 'none';
+  s.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? 'Календарь ▾' : 'Календарь ▴';
+  if (s.style.display !== 'none') renderCalendar();
+}
+
+function renderCalendar() {
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const horizon = document.getElementById('horizon').value;
+  const minBal = parseFloat(document.getElementById('minbal').value) || 0;
+  if (!horizon) return;
+
+  const startDate = today();
+  const end = new Date(horizon);
+  const start = new Date(startDate);
+  const days = Math.round((end - start) / 86400000);
+  if (days <= 0) return;
+
+  const incomes = getRows('income');
+  const expenses = getRows('expense');
+  const expandedInc = expandRows(incomes, startDate, horizon);
+  const expandedExp = expandRows(expenses, startDate, horizon);
+  const recommended = calcRecommended(balance, minBal, days, expandedInc, expandedExp);
+  const customVal = document.getElementById('custom-limit').value;
+  const dailyLimit = customVal ? Math.max(0, parseFloat(customVal)) : recommended;
+
+  const incMap = {}, expMap = {}, expDetail = {}, incDetail = {};
+  expandedInc.forEach(function(r) {
+    incMap[r.date] = (incMap[r.date] || 0) + r.sum;
+    if (!incDetail[r.date]) incDetail[r.date] = [];
+    incDetail[r.date].push({ label: r.label, sum: r.sum });
+  });
+  expandedExp.forEach(function(r) {
+    expMap[r.date] = (expMap[r.date] || 0) + r.sum;
+    if (!expDetail[r.date]) expDetail[r.date] = [];
+    expDetail[r.date].push({ label: r.label, sum: r.sum });
+  });
+
+  const DOW_RU = ['вс','пн','вт','ср','чт','пт','сб'];
+  const DOW_EN = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const MONTH_RU = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const MONTH_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const isRu = lang === 'ru';
+
+  const sym = C[currency].sym;
+  function fmtN(n) {
+    return Math.round(n).toLocaleString(C[currency].loc);
+  }
+
+  const table = document.getElementById('cal-table');
+  table.innerHTML = '';
+
+  // header
+  const thead = document.createElement('thead');
+  const hrow = document.createElement('tr');
+  const hdrs = isRu
+    ? ['дата','траты','доходы','утро','вечер']
+    : ['date','expenses','income','morning','evening'];
+  hdrs.forEach(function(h, i) {
+    const th = document.createElement('th');
+    th.textContent = h + (i >= 1 && i <= 4 ? ', ' + sym : '');
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  let cur = balance;
+  // apply first snapshot if exists
+  const firstSnap = snapshots.length ? snapshots.reduce(function(a,b){return a.date<b.date?a:b;}) : null;
+  if (firstSnap && firstSnap.date <= startDate) cur = firstSnap.balance;
+
+  let monthInc = 0, monthExp = 0, monthEndBal = balance;
+  let totalInc = 0, totalExp = 0, totalEndBal = balance;
+  let prevMonth = -1;
+
+  for (let d = 0; d <= days; d++) {
+    const dt = new Date(start);
+    dt.setDate(dt.getDate() + d);
+    const ds = dt.toISOString().split('T')[0];
+    const dow = dt.getDay(); // 0=sun,6=sat
+    const month = dt.getMonth();
+    const dayNum = dt.getDate();
+
+    // month total row before new month
+    if (prevMonth >= 0 && month !== prevMonth) {
+      const tr = document.createElement('tr');
+      tr.className = 'month-total';
+      const mname = (isRu ? MONTH_RU : MONTH_EN)[prevMonth];
+      const diff = monthInc - monthExp;
+      const cells = [mname + ' ' + dt.getFullYear(), fmtN(monthExp), fmtN(monthInc), (diff >= 0 ? '+' : '') + fmtN(diff), ''];
+      cells.forEach(function(v, i) {
+        const td = document.createElement('td');
+        td.textContent = v;
+        if (i === 1) td.className = 'expense';
+        if (i === 2) td.className = 'income';
+        if (i === 3) td.className = diff >= 0 ? 'income' : 'bal-neg';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+      monthInc = 0; monthExp = 0;
+    }
+    prevMonth = month;
+
+    const morningBal = cur;
+
+    // apply snap
+    const snap = snapshots.find(function(s) { return s.date === ds; });
+    if (snap && d > 0) cur = snap.balance;
+
+    const dayExp = dailyLimit + (expMap[ds] || 0);
+    const dayInc = incMap[ds] || 0;
+
+    cur -= dailyLimit;
+    cur += dayInc;
+    cur -= (expMap[ds] || 0);
+    if (snap) cur = snap.balance;
+
+    const eveningBal = cur;
+    monthInc += dayInc;
+    monthExp += dayExp;
+    monthEndBal = eveningBal;
+    totalInc += dayInc;
+    totalExp += dayExp;
+    totalEndBal = eveningBal;
+
+    const tr = document.createElement('tr');
+    if (dow === 0 || dow === 6 || (lang === 'ru' && RU_HOLIDAYS_2026.has(ds))) tr.className = 'weekend';
+    if (ds === startDate) tr.className = 'today-row';
+
+    const dowStr = (isRu ? DOW_RU : DOW_EN)[dow];
+    const dateStr = dayNum + ' ' + (isRu ? MONTH_RU : MONTH_EN)[month] + ' ' + dowStr;
+
+    const vals = [dateStr, fmtN(dayExp), fmtN(dayInc), fmtN(morningBal), fmtN(eveningBal)];
+    vals.forEach(function(v, i) {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (i === 2 && dayInc > 0) td.className = 'income';
+      if (i === 1 && dayExp > 0) td.className = 'expense';
+      if (i === 3) td.className = morningBal < 0 ? 'bal-neg' : morningBal < minBal ? 'bal-neg' : '';
+      if (i === 4) td.className = eveningBal < 0 ? 'bal-neg' : eveningBal < minBal ? 'bal-neg' : '';
+      tr.appendChild(td);
+    });
+
+    // tooltip on every row
+    tr.addEventListener('mouseenter', function(e) { showCalTooltip(e, expDetail[ds] || [], incDetail[ds] || [], dailyLimit, isRu); });
+    tr.addEventListener('mousemove', function(e) { moveCalTooltip(e); });
+    tr.addEventListener('mouseleave', hideCalTooltip);
+    tbody.appendChild(tr);
+  }
+
+  // last month total
+  if (prevMonth >= 0) {
+    const tr = document.createElement('tr');
+    tr.className = 'month-total';
+    const mname = (isRu ? MONTH_RU : MONTH_EN)[prevMonth];
+    const endDt = new Date(horizon);
+    const diff = monthInc - monthExp;
+    const cells = [mname + ' ' + endDt.getFullYear(), fmtN(monthExp), fmtN(monthInc), (diff >= 0 ? '+' : '') + fmtN(diff), ''];
+    cells.forEach(function(v, i) {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (i === 1) td.className = 'expense';
+      if (i === 2) td.className = 'income';
+      if (i === 3) td.className = diff >= 0 ? 'income' : 'bal-neg';
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+
+  // total period row
+  const trTotal = document.createElement('tr');
+  trTotal.className = 'month-total';
+  trTotal.style.borderTop = '1.5px solid rgba(0,0,0,0.2)';
+  const periodLabel = isRu ? 'итого период' : 'total period';
+  const totalDiff = totalInc - totalExp;
+  const totalCells = [periodLabel, fmtN(totalExp), fmtN(totalInc), (totalDiff >= 0 ? '+' : '') + fmtN(totalDiff), ''];
+  totalCells.forEach(function(v, i) {
+    const td = document.createElement('td');
+    td.textContent = v;
+    td.style.fontWeight = '600';
+    if (i === 1) td.className = 'expense';
+    if (i === 2) td.className = 'income';
+    if (i === 3) td.className = totalDiff >= 0 ? 'income' : 'bal-neg';
+    trTotal.appendChild(td);
+  });
+  tbody.appendChild(trTotal);
+
+  table.appendChild(tbody);
+
+  // override colors via style to bypass CSS specificity issues
+  table.querySelectorAll('td.income').forEach(function(td) { td.style.color = '#3B6D11'; });
+  table.querySelectorAll('td.expense').forEach(function(td) { td.style.color = '#A32D2D'; });
+  table.querySelectorAll('td.bal-neg').forEach(function(td) { td.style.color = '#A32D2D'; });
+}
+
+function showCalTooltip(e, expItems, incItems, dailyLimit, isRu) {
+  const tt = document.getElementById('cal-tooltip');
+  const sym = C[currency].sym;
+  function fmtT(n) { return Math.round(n).toLocaleString(C[currency].loc) + ' ' + sym; }
+
+  let html = '<div class="tt-row">';
+
+  // expenses column
+  html += '<div class="tt-col">';
+  html += '<div class="tt-head">' + (isRu ? 'траты' : 'expenses') + '</div>';
+  html += '<div class="tt-item"><span class="tt-name">' + (isRu ? 'лимит' : 'limit') + '</span><span class="tt-sum-exp">' + fmtT(dailyLimit) + '</span></div>';
+  expItems.forEach(function(item) {
+    html += '<div class="tt-item"><span class="tt-name">' + (item.label || '—') + '</span><span class="tt-sum-exp">' + fmtT(item.sum) + '</span></div>';
+  });
+  html += '</div>';
+
+  // income column
+  if (incItems.length > 0) {
+    html += '<div class="tt-col">';
+    html += '<div class="tt-head">' + (isRu ? 'доходы' : 'income') + '</div>';
+    incItems.forEach(function(item) {
+      html += '<div class="tt-item"><span class="tt-name">' + (item.label || '—') + '</span><span class="tt-sum-inc">' + fmtT(item.sum) + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  tt.innerHTML = html;
+  tt.style.display = 'block';
+  moveCalTooltip(e);
+}
+
+function moveCalTooltip(e) {
+  const tt = document.getElementById('cal-tooltip');
+  const margin = 12;
+  let x = e.clientX + margin;
+  let y = e.clientY + margin;
+  if (x + tt.offsetWidth > window.innerWidth - margin) x = e.clientX - tt.offsetWidth - margin;
+  if (y + tt.offsetHeight > window.innerHeight - margin) y = e.clientY - tt.offsetHeight - margin;
+  tt.style.left = x + 'px';
+  tt.style.top = y + 'px';
+}
+
+function hideCalTooltip() {
+  document.getElementById('cal-tooltip').style.display = 'none';
 }
 
 function importSnapshots() {
@@ -905,11 +1334,13 @@ function saveState() {
   };
   document.querySelectorAll('#incomes .entry-row').forEach(function(row) {
     const freqEl = row.querySelector('.income-freq:checked');
-    state.incomes.push({ date: row.querySelector('.income-date').value, sum: row.querySelector('.income-sum').value, label: row.querySelector('.income-label').value, freq: freqEl ? freqEl.value : 'once' });
+    const wdEl = row.querySelector('.income-wd');
+    state.incomes.push({ date: row.querySelector('.income-date').value, sum: row.querySelector('.income-sum').value, label: row.querySelector('.income-label').value, freq: freqEl ? freqEl.value : 'once', workday: wdEl ? wdEl.checked : false });
   });
   document.querySelectorAll('#expenses .entry-row').forEach(function(row) {
     const freqEl = row.querySelector('.expense-freq:checked');
-    state.expenses.push({ date: row.querySelector('.expense-date').value, sum: row.querySelector('.expense-sum').value, label: row.querySelector('.expense-label').value, freq: freqEl ? freqEl.value : 'once' });
+    const wdEl = row.querySelector('.expense-wd');
+    state.expenses.push({ date: row.querySelector('.expense-date').value, sum: row.querySelector('.expense-sum').value, label: row.querySelector('.expense-label').value, freq: freqEl ? freqEl.value : 'once', workday: wdEl ? wdEl.checked : false });
   });
   localStorage.setItem('cashflow_state', JSON.stringify(state));
 }
@@ -927,8 +1358,8 @@ function loadState() {
     document.getElementById('horizon').value = state.horizon || '';
     document.getElementById('minbal').value = state.minbal || '';
     document.getElementById('custom-limit').value = state.customLimit || '';
-    (state.incomes || []).forEach(function(r) { addRowWithData('incomes', 'income', r.date, r.sum, r.label, r.freq || 'once'); });
-    (state.expenses || []).forEach(function(r) { addRowWithData('expenses', 'expense', r.date, r.sum, r.label, r.freq || 'once'); });
+    (state.incomes || []).forEach(function(r) { addRowWithData('incomes', 'income', r.date, r.sum, r.label, r.freq || 'once', r.workday || false); });
+    (state.expenses || []).forEach(function(r) { addRowWithData('expenses', 'expense', r.date, r.sum, r.label, r.freq || 'once', r.workday || false); });
     return true;
   } catch(e) { return false; }
 }
