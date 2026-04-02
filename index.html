@@ -107,9 +107,9 @@ input:focus { border-color: rgba(0,0,0,0.4); }
 body.dark .debug-bar { background: #3a3000; border-color: #7a6000; color: #aaa; }
 #cal-table th { background: #f5f5f3; color: #888; font-weight: 500; padding: 6px 8px; text-align: right; border-bottom: 0.5px solid rgba(0,0,0,0.1); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
 #cal-table th:first-child { text-align: left; }
-#cal-table td { padding: 5px 8px; text-align: right; border-bottom: 0.5px solid rgba(0,0,0,0.05); white-space: nowrap; color: #1a1a1a; }
+#cal-table td { padding: 5px 8px; text-align: right; border-bottom: 0.5px solid rgba(0,0,0,0.05); white-space: nowrap; color: #1a1a1a; font-weight: 500; }
 #cal-table td:first-child { text-align: left; color: #666; }
-#cal-table tr.weekend td { background: #fafaf0; }
+#cal-table tr.weekend td { background: #fffbf0; }
 #cal-table tr.today-row td { background: #E6F1FB; font-weight: 500; }
 #cal-table tr.month-total td { background: #f0f0ed; font-weight: 500; color: #1a1a1a; border-top: 0.5px solid rgba(0,0,0,0.15); border-bottom: 0.5px solid rgba(0,0,0,0.15); }
 #cal-table tr.month-total td:first-child { color: #888; }
@@ -122,7 +122,7 @@ body.dark .debug-bar { background: #3a3000; border-color: #7a6000; color: #aaa; 
 body.dark #cal-table th { background: #222; color: #666; border-color: rgba(255,255,255,0.1); }
 body.dark #cal-table td { color: #e8e8e6; border-color: rgba(255,255,255,0.05); }
 body.dark #cal-table td:first-child { color: #888; }
-body.dark #cal-table tr.weekend td { background: #252510; }
+body.dark #cal-table tr.weekend td { background: #353220; }
 body.dark #cal-table tr.today-row td { background: #0c2a44; }
 body.dark #cal-table tr.month-total td { background: #2a2a2a; color: #e8e8e6; }
 #cal-tooltip { position: fixed; display: none; background: var(--bg, #fff); border: 0.5px solid rgba(0,0,0,0.15); border-radius: 10px; padding: 10px 14px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 9999; pointer-events: none; min-width: 160px; max-width: 280px; }
@@ -159,16 +159,6 @@ body.dark #cal-tooltip .tt-limit { border-color: rgba(255,255,255,0.08); color: 
       <div style="display:flex; gap:6px; align-items:center;">
         <input type="number" id="balance" value="50000" step="0.01" style="max-width:140px;">
         <button class="snap-btn" onclick="snapToday()" id="t-snap-btn">сегодня</button>
-      </div>
-    </div>
-    <div class="field-row">
-      <label id="t-horizon">До</label>
-      <div style="display:flex; gap:4px; align-items:center; flex:1;">
-        <input type="date" id="horizon" style="max-width:125px; min-width:0; flex:none;">
-        <button class="snap-btn" onclick="setHorizonQuick(1,'month')" id="btn-q1m" style="padding:3px 6px; flex-shrink:0;">1м</button>
-        <button class="snap-btn" onclick="setHorizonQuick(3,'month')" id="btn-q3m" style="padding:3px 6px; flex-shrink:0;">3м</button>
-        <button class="snap-btn" onclick="setHorizonQuick(6,'month')" id="btn-q6m" style="padding:3px 6px; flex-shrink:0;">6м</button>
-        <button class="snap-btn" onclick="setHorizonQuick(1,'year')" id="btn-q1y" style="padding:3px 6px; flex-shrink:0;">1г</button>
       </div>
     </div>
     <div class="field-row">
@@ -236,6 +226,15 @@ body.dark #cal-tooltip .tt-limit { border-color: rgba(255,255,255,0.08); color: 
     <div style="position:relative; width:100%; height:220px;">
       <canvas id="chart"></canvas>
     </div>
+    <div style="display:flex; gap:4px; align-items:center; margin-top:10px; flex-wrap:nowrap;">
+      <label id="t-horizon" style="font-size:13px; color:#888; white-space:nowrap; flex-shrink:0;">До</label>
+      <input type="date" id="horizon" style="max-width:125px; min-width:0; flex:none;">
+      <button class="snap-btn" onclick="setHorizonQuick(1,'month')" id="btn-q1m" style="padding:3px 6px; flex-shrink:0;">1м</button>
+      <button class="snap-btn" onclick="setHorizonQuick(3,'month')" id="btn-q3m" style="padding:3px 6px; flex-shrink:0;">3м</button>
+      <button class="snap-btn" onclick="setHorizonQuick(6,'month')" id="btn-q6m" style="padding:3px 6px; flex-shrink:0;">6м</button>
+      <button class="snap-btn" onclick="setHorizonQuick(1,'year')" id="btn-q1y" style="padding:3px 6px; flex-shrink:0;">1г</button>
+      <button class="snap-btn" onclick="setHorizonNY()" id="btn-qny" style="padding:3px 6px; flex-shrink:0;">нг</button>
+    </div>
   </div>
   <div class="chart-note" id="chart-note"></div>
 
@@ -301,6 +300,21 @@ body.dark #cal-tooltip .tt-limit { border-color: rgba(255,255,255,0.08); color: 
     </div>
   </div>
 
+  <div id="pie-section" style="display:none; margin-bottom:2rem;">
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div class="section" style="padding:1rem;">
+        <div class="section-title" style="margin-bottom:8px;" id="t-pie-inc">Доходы</div>
+        <div style="position:relative; height:200px;"><canvas id="pie-inc"></canvas></div>
+        <div id="pie-inc-legend" style="margin-top:8px; font-size:11px;"></div>
+      </div>
+      <div class="section" style="padding:1rem;">
+        <div class="section-title" style="margin-bottom:8px;" id="t-pie-exp">Расходы</div>
+        <div style="position:relative; height:200px;"><canvas id="pie-exp"></canvas></div>
+        <div id="pie-exp-legend" style="margin-top:8px; font-size:11px;"></div>
+      </div>
+    </div>
+  </div>
+
 <div id="cal-tooltip"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -323,8 +337,8 @@ function showQR() {
 // Epoch: 2020-01-01
 const EPOCH = new Date('2020-01-01').getTime();
 const MS_DAY = 86400000;
-const FREQ_MAP = { once: 0, daily: 1, weekly: 2, monthly: 3 };
-const FREQ_INV = ['once', 'daily', 'weekly', 'monthly'];
+const FREQ_MAP = { once: 0, daily: 1, weekly: 2, monthly: 3, yearly: 4 };
+const FREQ_INV = ['once', 'daily', 'weekly', 'monthly', 'yearly'];
 
 function dateToDay(s) { return s ? Math.round((new Date(s).getTime() - EPOCH) / MS_DAY) : 0; }
 function dayToDate(d) { return new Date(EPOCH + d * MS_DAY).toISOString().split('T')[0]; }
@@ -345,8 +359,8 @@ function getInt48(dv, pos) {
 
 function labelBytes(s) {
   const enc = new TextEncoder().encode((s || '').slice(0, 31));
-  // ensure max 63 bytes (6 bits) after UTF-8 encoding
-  return enc.slice(0, 63);
+  // ensure max 31 bytes (5 bits) after UTF-8 encoding
+  return enc.slice(0, 31);
 }
 
 function packState() {
@@ -392,8 +406,8 @@ function packState() {
       const freqIdx = FREQ_MAP[r.freq] || 0;
       dv.setInt16(pos, dateToDay(r.date), false); pos += 2;
       setInt48(dv, pos, Math.round((parseFloat(r.sum) || 0) * 100)); pos += 6;
-      // pack: [freq:2 bits][lablen:6 bits]
-      dv.setUint8(pos++, (freqIdx << 6) | lb.length);
+      // pack: [freq:3 bits][lablen:5 bits]
+      dv.setUint8(pos++, (freqIdx << 5) | lb.length);
       lb.forEach(function(b) { dv.setUint8(pos++, b); });
     });
   }
@@ -445,8 +459,8 @@ function unpackState(b64url) {
       const date = dayToDate(dv.getInt16(pos, false)); pos += 2;
       const sum = String(getInt48(dv, pos) / 100); pos += 6;
       const fl = dv.getUint8(pos++);
-      const freq = FREQ_INV[(fl >> 6) & 0x3] || 'once';
-      const llen = fl & 0x3F;
+      const freq = FREQ_INV[(fl >> 5) & 0x7] || 'once';
+      const llen = fl & 0x1F;
       const label = new TextDecoder().decode(bytes.slice(pos, pos + llen)); pos += llen;
       arr.push({ date, sum, label, freq });
     }
@@ -540,10 +554,11 @@ const T = {
     freqDaily: 'день',
     freqMonthly: 'мес',
     freqWeekly: 'нед',
+    freqYearly: 'год',
     snapBtn: 'сегодня',
     invTitle: 'Инвентаризации',
     legSnap: 'инвентаризация',
-    q1m: '1м', q3m: '3м', q6m: '6м', q1y: '1г',
+    q1m: '1м', q3m: '3м', q6m: '6м', q1y: '1г', qny: 'нг',
     btnNoNeg: 'без минусов', btnAboveMin: 'выше минимума'
   },
   en: {
@@ -576,10 +591,11 @@ const T = {
     freqDaily: 'day',
     freqMonthly: 'mo',
     freqWeekly: 'wk',
+    freqYearly: 'yr',
     snapBtn: 'today',
     invTitle: 'Snapshots',
     legSnap: 'snapshot',
-    q1m: '1mo', q3m: '3mo', q6m: '6mo', q1y: '1yr',
+    q1m: '1mo', q3m: '3mo', q6m: '6mo', q1y: '1yr', qny: 'NY',
     btnNoNeg: 'no negatives', btnAboveMin: 'above minimum'
   }
 };
@@ -630,6 +646,7 @@ function applyLang() {
       else if (r.value === 'daily') lbl.textContent = t.freqDaily;
       else if (r.value === 'monthly') lbl.textContent = t.freqMonthly;
       else if (r.value === 'weekly') lbl.textContent = t.freqWeekly;
+      else if (r.value === 'yearly') lbl.textContent = t.freqYearly;
     });
   });
   document.getElementById('btn-ru').classList.toggle('active', lang === 'ru');
@@ -643,6 +660,7 @@ function applyLang() {
   document.getElementById('btn-q3m').textContent = t.q3m;
   document.getElementById('btn-q6m').textContent = t.q6m;
   document.getElementById('btn-q1y').textContent = t.q1y;
+  document.getElementById('btn-qny').textContent = t.qny;
   document.getElementById('btn-noneg').textContent = t.btnNoNeg;
   document.getElementById('btn-abovemin').textContent = t.btnAboveMin;
 }
@@ -734,6 +752,14 @@ function toggleSection(id, sortBtnId, addBtnId) {
   arrow.textContent = collapsed ? '▾' : '▸';
 }
 
+function setHorizonNY() {
+  const year = new Date(today()).getFullYear();
+  const dec31 = year + '-12-31';
+  document.getElementById('horizon').value = dec31;
+  saveState();
+  calculate();
+}
+
 function setHorizonQuick(n, unit) {
   const d = new Date(today());
   if (unit === 'month') d.setMonth(d.getMonth() + n);
@@ -800,8 +826,11 @@ function addRowWithData(containerId, type, date, sum, label, freq, workday) {
   const uid = Math.random().toString(36).slice(2, 8);
   const f = freq || 'once';
   const wd = workday ? ' checked' : '';
-  const wdHtml = (lang === 'ru' && type === 'income')
+  const wdHtml = lang === 'ru'
     ? '<label title="зачисление только в рабочие дни" style="display:flex;align-items:center;gap:3px;font-size:11px;color:#888;cursor:pointer;white-space:nowrap;"><input type="checkbox" class="' + type + '-wd"' + wd + ' style="width:auto;margin:0;"> рд</label>'
+    : '';
+  const yearlyBtn = type === 'income'
+    ? '<input type="radio" name="freq-' + uid + '" id="fy-' + uid + '" class="' + type + '-freq" value="yearly"' + (f === 'yearly' ? ' checked' : '') + '><label for="fy-' + uid + '">' + t.freqYearly + '</label>'
     : '';
   div.innerHTML =
     '<input type="date" class="' + type + '-date" value="' + (date || today()) + '" style="max-width:130px;">' +
@@ -814,6 +843,7 @@ function addRowWithData(containerId, type, date, sum, label, freq, workday) {
       '<input type="radio" name="freq-' + uid + '" id="fd-' + uid + '" class="' + type + '-freq" value="daily"' + (f === 'daily' ? ' checked' : '') + '><label for="fd-' + uid + '">' + t.freqDaily + '</label>' +
       '<input type="radio" name="freq-' + uid + '" id="fm-' + uid + '" class="' + type + '-freq" value="monthly"' + (f === 'monthly' ? ' checked' : '') + '><label for="fm-' + uid + '">' + t.freqMonthly + '</label>' +
       '<input type="radio" name="freq-' + uid + '" id="fw-' + uid + '" class="' + type + '-freq" value="weekly"' + (f === 'weekly' ? ' checked' : '') + '><label for="fw-' + uid + '">' + t.freqWeekly + '</label>' +
+      yearlyBtn +
     '</div>';
   el.appendChild(div);
 }
@@ -842,7 +872,10 @@ function expandRows(rows, startDate, endDate) {
       return (r.workday && lang === 'ru' && isNonWorkday(ds)) ? prevWorkday(ds) : ds;
     }
     if (r.freq === 'once') {
-      result.push({ date: shiftDate(r.date), sum: r.sum, label: r.label });
+      const shifted = shiftDate(r.date);
+      if (shifted >= startDate && shifted <= endDate) {
+        result.push({ date: shifted, sum: r.sum, label: r.label });
+      }
     } else {
       const dt = new Date(r.date);
       const end = new Date(endDate);
@@ -853,6 +886,7 @@ function expandRows(rows, startDate, endDate) {
         }
         if (r.freq === 'monthly') dt.setMonth(dt.getMonth() + 1);
         else if (r.freq === 'weekly') dt.setDate(dt.getDate() + 7);
+        else if (r.freq === 'yearly') dt.setFullYear(dt.getFullYear() + 1);
         else dt.setDate(dt.getDate() + 1);
       }
     }
@@ -902,13 +936,19 @@ function calculate() {
   let cur = firstSnap ? firstSnap.balance : balance;
   let planned = firstSnap ? firstSnap.balance : balance;
 
-  const labels = [], balances = [], dangerPoints = [], plannedBalances = [];
+  const labels = [], fullDateLabels = [], balances = [], dangerPoints = [], plannedBalances = [];
 
   for (let d = 0; d <= chartDays; d++) {
     const dt = new Date(chartStart);
     dt.setDate(dt.getDate() + d);
     const ds = dt.toISOString().split('T')[0];
     labels.push(ds.slice(5));
+    const _fdt = new Date(chartStart); _fdt.setDate(_fdt.getDate() + d);
+    const _m = _fdt.getMonth();
+    const _MFULL = lang === 'ru'
+      ? ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']
+      : ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    fullDateLabels.push(_fdt.getDate() + ' ' + _MFULL[_m] + ' ' + _fdt.getFullYear());
     if (d > 0) {
       cur -= dailyLimit;
       planned -= dailyLimit;
@@ -941,42 +981,50 @@ function calculate() {
     if (idx >= 0) snapData[idx] = s.balance;
   });
 
-  if (chartInst) chartInst.destroy();
   document.getElementById('chart-wrap').style.display = 'block';
 
-  chartInst = new Chart(document.getElementById('chart'), {
-    type: 'line',
-    data: {
-      labels: visLabels,
-      datasets: [
-        { label: T[lang].legBalance, data: balances, borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)', borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.2 },
-        { label: T[lang].legDanger, data: dangerPoints, borderColor: '#A32D2D', borderWidth: 0, pointRadius: 3, pointBackgroundColor: '#A32D2D', fill: false },
-        { label: T[lang].legMin, data: Array(balances.length).fill(minBal), borderColor: 'rgba(163,45,45,0.4)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false },
-        { label: T[lang].legSnap, data: snapData, borderColor: '#1D9E75', borderWidth: 0, pointRadius: 6, pointBackgroundColor: '#1D9E75', pointStyle: 'circle', fill: false, spanGaps: false }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: {
-          title: function(items) {
-            if (!items.length) return '';
-            return labels[items[0].dataIndex] || '';
-          },
-          label: function(ctx) {
-            if (ctx.raw === null) return null;
-            return ctx.dataset.label + ': ' + fmt(ctx.raw);
-          }
-        }}
-      },
-      scales: {
-        x: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, color: '#888', callback: function(v) { return fmt(v); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+  const datasets = [
+    { label: T[lang].legBalance, data: balances, borderColor: '#185FA5', backgroundColor: 'rgba(24,95,165,0.08)', borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.2 },
+    { label: T[lang].legDanger, data: dangerPoints, borderColor: '#A32D2D', borderWidth: 0, pointRadius: 3, pointBackgroundColor: '#A32D2D', fill: false },
+    { label: T[lang].legMin, data: Array(balances.length).fill(minBal), borderColor: 'rgba(163,45,45,0.4)', borderWidth: 1, borderDash: [4,4], pointRadius: 0, fill: false },
+    { label: T[lang].legSnap, data: snapData, borderColor: '#1D9E75', borderWidth: 0, pointRadius: 6, pointBackgroundColor: '#1D9E75', pointStyle: 'circle', fill: false, spanGaps: false }
+  ];
+
+  if (chartInst) {
+    chartInst.data.labels = visLabels;
+    chartInst.data.datasets.forEach(function(ds, i) {
+      ds.data = datasets[i].data;
+      ds.label = datasets[i].label;
+    });
+    chartInst.update();
+  } else {
+    chartInst = new Chart(document.getElementById('chart'), {
+      type: 'line',
+      data: { labels: visLabels, datasets: datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 400, easing: 'easeInOutQuart' },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            title: function(items) {
+              if (!items.length) return '';
+              return fullDateLabels[items[0].dataIndex] || '';
+            },
+            label: function(ctx) {
+              if (ctx.raw === null) return null;
+              return ctx.dataset.label + ': ' + fmt(ctx.raw);
+            }
+          }}
+        },
+        scales: {
+          x: { ticks: { font: { size: 11 }, color: '#888' }, grid: { display: false } },
+          y: { ticks: { font: { size: 11 }, color: '#888', callback: function(v) { return fmt(v); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+        }
       }
-    }
-  });
+    });
+  }
 
   const note = document.getElementById('chart-note');
   note.style.display = 'block';
@@ -988,6 +1036,13 @@ function calculate() {
 
   renderInvList(labels, plannedBalances);
   if (document.getElementById('cal-section').style.display !== 'none') renderCalendar();
+
+  // always render pie charts
+  const _inc = getRows('income');
+  const _exp = getRows('expense');
+  const _eInc = expandRows(_inc, today(), horizon);
+  const _eExp = expandRows(_exp, today(), horizon);
+  renderPieCharts(_eInc, _eExp, dailyLimit, days, lang === 'ru');
 }
 
 function renderInvList(labels, balances) {
@@ -1236,6 +1291,87 @@ function renderCalendar() {
   table.querySelectorAll('td.income').forEach(function(td) { td.style.color = '#3B6D11'; });
   table.querySelectorAll('td.expense').forEach(function(td) { td.style.color = '#A32D2D'; });
   table.querySelectorAll('td.bal-neg').forEach(function(td) { td.style.color = '#A32D2D'; });
+
+  renderPieCharts(expandedInc, expandedExp, dailyLimit, days, isRu);
+}
+
+let pieIncInst = null, pieExpInst = null;
+
+function renderPieCharts(expandedInc, expandedExp, dailyLimit, days, isRu) {
+  const pieSection = document.getElementById('pie-section');
+
+  // aggregate by label
+  const incTotals = {}, expTotals = {};
+  expandedInc.forEach(function(r) {
+    const k = r.label || (isRu ? 'прочее' : 'other');
+    incTotals[k] = (incTotals[k] || 0) + r.sum;
+  });
+  expandedExp.forEach(function(r) {
+    const k = r.label || (isRu ? 'прочее' : 'other');
+    expTotals[k] = (expTotals[k] || 0) + r.sum;
+  });
+  // add daily limit as category
+  const limitLabel = isRu ? 'лимит' : 'limit';
+  expTotals[limitLabel] = (expTotals[limitLabel] || 0) + dailyLimit * (days + 1);
+
+  const COLORS = ['#185FA5','#1D9E75','#BA7517','#A32D2D','#534AB7','#0F6E56','#993C1D','#3B6D11','#185FA5','#888'];
+
+  function buildPie(canvasId, legendId, totals, titleId, title) {
+    document.getElementById(titleId).textContent = title;
+    const keys = Object.keys(totals);
+    const vals = keys.map(function(k) { return Math.round(totals[k]); });
+    const total = vals.reduce(function(a, b) { return a + b; }, 0);
+    const colors = keys.map(function(_, i) { return COLORS[i % COLORS.length]; });
+
+    const inst = canvasId === 'pie-inc' ? pieIncInst : pieExpInst;
+    if (inst) inst.destroy();
+
+    const newInst = new Chart(document.getElementById(canvasId), {
+      type: 'doughnut',
+      data: { labels: keys, datasets: [{ data: vals, backgroundColor: colors, borderWidth: 1, borderColor: '#fff' }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx) {
+            const pct = total > 0 ? Math.round(ctx.raw / total * 100) : 0;
+            return ctx.label + ': ' + Math.round(ctx.raw).toLocaleString(C[currency].loc) + ' ' + C[currency].sym + ' (' + pct + '%)';
+          }}}
+        }
+      }
+    });
+    if (canvasId === 'pie-inc') pieIncInst = newInst; else pieExpInst = newInst;
+
+    // legend
+    const leg = document.getElementById(legendId);
+    const isDark = document.body.classList.contains('dark');
+    const nameColor = isDark ? '#aaa' : '#666';
+    const valColor = isDark ? '#fff' : '#1a1a1a';
+
+    // sort by value descending
+    const sorted = keys.map(function(k, i) { return { k: k, v: vals[i], c: colors[i] }; });
+    sorted.sort(function(a, b) { return b.v - a.v; });
+
+    leg.innerHTML = sorted.map(function(item) {
+      const pct = total > 0 ? Math.round(item.v / total * 100) : 0;
+      return '<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;">' +
+        '<span style="width:8px;height:8px;border-radius:2px;background:' + item.c + ';flex-shrink:0;"></span>' +
+        '<span style="color:' + nameColor + ';">' + item.k + '</span>' +
+        '<span style="margin-left:auto;color:' + valColor + ';font-weight:700;">' + pct + '%</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  const incLabel = isRu ? 'Доходы' : 'Income';
+  const expLabel = isRu ? 'Расходы' : 'Expenses';
+
+  if (Object.keys(incTotals).length > 0 || Object.keys(expTotals).length > 0) {
+    pieSection.style.display = 'block';
+    buildPie('pie-inc', 'pie-inc-legend', incTotals, 't-pie-inc', incLabel);
+    buildPie('pie-exp', 'pie-exp-legend', expTotals, 't-pie-exp', expLabel);
+  } else {
+    pieSection.style.display = 'none';
+  }
 }
 
 function showCalTooltip(e, expItems, incItems, dailyLimit, isRu, dateStr) {
